@@ -31,7 +31,7 @@ export default function LoginScreen() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-5xl font-black text-[#FFDD2D] mb-2">
-            Охлаждение
+            Т-сбережение
           </h1>
           <p className="text-gray-400 text-lg">
             Помогаем принимать взвешенные финансовые решения

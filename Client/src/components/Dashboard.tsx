@@ -40,9 +40,9 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-[#FFDD2D] rounded-2xl flex items-center justify-center">
-                <span className="text-2xl font-black text-black">О</span>
+                <span className="text-2xl font-black text-black">T</span>
               </div>
-              <h1 className="text-2xl font-black text-white">Охлаждение</h1>
+              <h1 className="text-2xl font-black text-white">Т-сбережение</h1>
             </div>
 
             <div className="flex items-center gap-4">
