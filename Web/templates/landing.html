@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-сберегатель | Умный контроль финансов</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background-color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header - Компактный */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            padding: 0.8rem 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #000000;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            color: #ffdd2d;
+            font-size: 1.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 1.8rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #4a5568;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            padding: 0.5rem 0;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: #ffdd2d;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #ffdd2d;
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .launch-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.7rem 1.5rem;
+            background: linear-gradient(135deg, #a491b8 0%, #5783cf 100%);
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(106, 17, 203, 0.2);
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .launch-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(106, 17, 203, 0.3);
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            gap: 4px;
+        }
+
+        .hamburger span {
+            width: 22px;
+            height: 2px;
+            background: #1a1a1a;
+            transition: 0.3s;
+        }
+
+        /* Hero Section - Компактный и элегантный */
+        .hero {
+            min-height: 85vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: linear-gradient(135deg, #ffffff 0%, #fafbff 100%);
+            padding-top: 60px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(255, 221, 45, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(106, 17, 203, 0.05) 0%, transparent 50%);
+            z-index: 0;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero-content h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 1.2rem;
+            background: linear-gradient(135deg, #1a1a1a 0%, #ffdd2d 50%, #2575fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+        }
+
+        .hero-content p {
+            font-size: 1.1rem;
+            margin-bottom: 2.2rem;
+            color: #64748b;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.7;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.7rem;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #ffdd2d 0%, #f4c900 100%);
+            color: black;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(255, 221, 45, 0.2);
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 221, 45, 0.3);
+        }
+
+        .online-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.7rem;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #2575fc 0%, #6a11cb 100%);
+            color: white;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(37, 117, 252, 0.2);
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .online-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(37, 117, 252, 0.3);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .features-list {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .feature-item i {
+            color: #00b09b;
+            font-size: 0.9rem;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 80px 0;
+            background: #ffffff;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+            color: #1a1a1a;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(135deg, #ffdd2d 0%, #2575fc 100%);
+            border-radius: 2px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            text-align: center;
+            padding: 2rem;
+            border-radius: 16px;
+            background: #f8faff;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(135deg, #ffdd2d 0%, #2575fc 100%);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(255, 221, 45, 0.1);
+            border-color: #ffdd2d;
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            color: #ffdd2d;
+            margin-bottom: 1.2rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            color: #1a1a1a;
+        }
+
+        .feature-card p {
+            color: #64748b;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* App Preview Section */
+        .app-preview {
+            padding: 80px 0;
+            background: linear-gradient(135deg, #fafbff 0%, #f5f7ff 100%);
+            position: relative;
+        }
+
+        .preview-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .preview-content h2 {
+            font-size: 2rem;
+            margin-bottom: 1.2rem;
+            color: #1a1a1a;
+        }
+
+        .preview-content p {
+            font-size: 1rem;
+            color: #64748b;
+            margin-bottom: 1.5rem;
+            line-height: 1.7;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .tech-badge {
+            background: #e2e8f0;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #4a5568;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .preview-image {
+            position: relative;
+        }
+
+        .preview-image img {
+            width: 100%;
+            border-radius: 16px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease;
+        }
+
+        .preview-image:hover img {
+            transform: scale(1.02);
+        }
+
+        .preview-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #ffdd2d;
+            color: black;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            box-shadow: 0 4px 12px rgba(255, 221, 45, 0.2);
+        }
+
+        /* Statistics */
+        .statistics {
+            padding: 80px 0;
+            background: #ffffff;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 1.5rem;
+            border-radius: 16px;
+            background: #f8faff;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(255, 221, 45, 0.1);
+        }
+
+        .stat-number {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #ffdd2d;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.95rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        /* Screenshots */
+        .screenshots {
+            padding: 80px 0;
+            background: linear-gradient(135deg, #fafbff 0%, #ffffff 100%);
+        }
+
+        .screenshots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .screenshot {
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .screenshot:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
+        }
+
+        .screenshot img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: transform 0.5s ease;
+        }
+
+        .screenshot:hover img {
+            transform: scale(1.05);
+        }
+
+        /* Download CTA */
+        .download-cta {
+            padding: 80px 0;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d3748 100%);
+            text-align: center;
+            color: #ffffff;
+            position: relative;
+        }
+
+        /* Footer */
+        footer {
+            padding: 60px 0 25px;
+            background: #1a1a1a;
+            color: #ffffff;
+            text-align: center;
+            position: relative;
+        }
+
+        footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #ffdd2d, transparent);
+        }
+
+        .footer-content p {
+            margin-bottom: 0.8rem;
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .footer-links a {
+            color: #ffdd2d;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: opacity 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            opacity: 0.8;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: white;
+                flex-direction: column;
+                padding: 1.5rem;
+                gap: 1rem;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                border-top: 1px solid #f0f0f0;
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .hero-content h1 {
+                font-size: 2.2rem;
+            }
+
+            .hero-content p {
+                font-size: 1rem;
+            }
+
+            .btn-group {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .download-btn, .online-btn {
+                width: 100%;
+                max-width: 280px;
+                justify-content: center;
+            }
+
+            .preview-container {
+                grid-template-columns: 1fr;
+                gap: 2.5rem;
+            }
+
+            .hero {
+                min-height: 70vh;
+                padding: 80px 20px 40px;
+            }
+
+            .features, .app-preview, .statistics, .screenshots, .download-cta {
+                padding: 60px 0;
+            }
+
+            .section-title {
+                font-size: 1.8rem;
+                margin-bottom: 2.5rem;
+            }
+
+            .features-list {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        /* Анимации */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Прогресс-бар скролла */
+        .scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 2px;
+            background: linear-gradient(135deg, #ffdd2d 0%, #2575fc 100%);
+            z-index: 1001;
+            transition: width 0.1s ease;
+        }
+    </style>
+</head>
+<body>
+    <!-- Прогресс-бар скролла -->
+    <div class="scroll-progress" id="scrollProgress"></div>
+
+    <!-- Header - Компактный и стильный -->
+    <header>
+        <nav class="container">
+            <a href="#" class="logo">
+                <i class="fas fa-piggy-bank"></i>
+                T-сберегатель
+            </a>
+            <ul class="nav-links">
+                <li><a href="#features">Возможности</a></li>
+                <li><a href="#app-preview">Приложение</a></li>
+                <li><a href="#statistics">Эффективность</a></li>
+                <li><a href="#screenshots">Скриншоты</a></li>
+                <li>
+                    <a href="/app/" class="launch-btn">
+                        <i class="fas fa-rocket"></i>
+                        Запустить
+                    </a>
+                </li>
+            </ul>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hero Section - Компактный -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Умный контроль финансовых решений</h1>
+                <p>Полнофункциональное веб-приложение на Flask, которое помогает принимать осознанные финансовые решения, анализирует расходы и предотвращает импульсивные покупки.</p>
+                
+                <div class="btn-group">
+                    <a href="#download" class="download-btn">
+                        <i class="fas fa-download"></i>
+                        Скачать для Android
+                    </a>
+                    <a href="/app/" class="online-btn">
+                        <i class="fas fa-play-circle"></i>
+                        Запустить веб-версию
+                        <span class="badge">
+                            <i class="fas fa-bolt"></i>
+                            Flask
+                        </span>
+                    </a>
+                </div>
+                
+                <div class="features-list">
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        Анализ расходов в реальном времени
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        ИИ-рекомендации по экономии
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        Простой и удобный интерфейс
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Мощные возможности</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3>ИИ-анализ расходов</h3>
+                    <p>Искусственный интеллект анализирует ваши траты и дает персонализированные рекомендации по экономии.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Защита от импульсивных покупок</h3>
+                    <p>Умные уведомления и таймеры ожидания предотвращают спонтанные траты.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-network"></i>
+                    </div>
+                    <h3>Визуальная аналитика</h3>
+                    <p>Интерактивные графики и отчеты помогают понять структуру расходов.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- App Preview -->
+    <section id="app-preview" class="app-preview">
+        <div class="container">
+            <h2 class="section-title">Flask веб-приложение</h2>
+            <div class="preview-container">
+                <div class="preview-content">
+                    <h2>Полноценное веб-приложение</h2>
+                    <p>Наше приложение построено на современном стеке технологий и предоставляет все функции через удобный веб-интерфейс.</p>
+                    
+                    <div class="tech-stack">
+                        <span class="tech-badge">
+                            <i class="fab fa-python"></i>
+                            Python/Flask
+                        </span>
+                        <span class="tech-badge">
+                            <i class="fas fa-database"></i>
+                            SQLite/PostgreSQL
+                        </span>
+                        <span class="tech-badge">
+                            <i class="fab fa-js"></i>
+                            JavaScript
+                        </span>
+                        <span class="tech-badge">
+                            <i class="fas fa-chart-bar"></i>
+                            Chart.js
+                        </span>
+                    </div>
+                    
+                    <p>Приложение включает в себя:</p>
+                    <ul style="color: #64748b; margin-bottom: 1.5rem; padding-left: 1.2rem; font-size: 0.95rem;">
+                        <li style="margin-bottom: 0.4rem;">Анализ банковских выписок</li>
+                        <li style="margin-bottom: 0.4rem;">Категоризацию расходов</li>
+                        <li style="margin-bottom: 0.4rem;">Постановку финансовых целей</li>
+                        <li style="margin-bottom: 0.4rem;">Уведомления о расходах</li>
+                    </ul>
+                    
+                    <a href="/app/" class="online-btn" style="display: inline-flex;">
+                        <i class="fas fa-external-link-alt"></i>
+                        Открыть веб-приложение
+                    </a>
+                </div>
+                
+                <div class="preview-image floating">
+                    <div class="preview-badge">
+                        <i class="fas fa-live"></i>
+                        Работающая версия
+                    </div>
+                    <img src="https://via.placeholder.com/600x400/2575fc/FFFFFF?text=Flask+%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D0%B5" alt="Flask приложение T-сберегатель">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics -->
+    <section id="statistics" class="statistics">
+        <div class="container">
+            <h2 class="section-title">Наша эффективность</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">94%</div>
+                    <div class="stat-label">Пользователей экономят больше</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">2.5к</div>
+                    <div class="stat-label">Активных пользователей</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">15к+</div>
+                    <div class="stat-label">Сохраненных транзакций</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">87%</div>
+                    <div class="stat-label">Довольных клиентов</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Screenshots -->
+    <section id="screenshots" class="screenshots">
+        <div class="container">
+            <h2 class="section-title">Интерфейс приложения</h2>
+            <div class="screenshots-grid">
+                <div class="screenshot">
+                    <img src="https://via.placeholder.com/400x600/ffdd2d/000000?text=%D0%93%D0%BB%D0%B0%D0%B2%D0%BD%D0%B0%D1%8F+%D0%BF%D0%B0%D0%BD%D0%B5%D0%BB%D1%8C" alt="Главная панель">
+                </div>
+                <div class="screenshot">
+                    <img src="https://via.placeholder.com/400x600/00C274/FFFFFF?text=%D0%90%D0%BD%D0%B0%D0%BB%D0%B8%D1%82%D0%B8%D0%BA%D0%B0" alt="Аналитика">
+                </div>
+                <div class="screenshot">
+                    <img src="https://via.placeholder.com/400x600/6a11cb/FFFFFF?text=%D0%9E%D1%82%D1%87%D0%B5%D1%82%D1%8B" alt="Отчеты">
+                </div>
+                <div class="screenshot">
+                    <img src="https://via.placeholder.com/400x600/2575fc/FFFFFF?text=%D0%A6%D0%B5%D0%BB%D0%B8+%D1%8D%D0%BA%D0%BE%D0%BD%D0%BE%D0%BC%D0%B8%D0%B8" alt="Цели экономии">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download CTA -->
+    <section id="download" class="download-cta">
+        <div class="container">
+            <h2 style="font-size: 2.2rem; margin-bottom: 1.2rem; font-weight: 700;">Начните экономить сегодня</h2>
+            <p style="font-size: 1.1rem; margin-bottom: 2rem; opacity: 0.9;">Выберите удобный способ использования</p>
+            <div class="btn-group" style="justify-content: center;">
+                <a href="file:///C:/Users/Mark/Desktop/app.apk" class="download-btn" download="" style="background: #ffdd2d; color: #1a1a1a;">
+                    <i class="fas fa-mobile-alt"></i>
+                    Скачать для Android
+                </a>
+                <a href="/app/" class="online-btn" style="background: #2575fc; color: white;">
+                    <i class="fas fa-desktop"></i>
+                    Веб-приложение
+                </a>
+            </div>
+            <p style="margin-top: 1.5rem; font-size: 0.85rem; opacity: 0.7;">
+                <i class="fas fa-info-circle"></i>
+                Веб-приложение доступно сразу после нажатия кнопки
+            </p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container footer-content">
+            <h3 style="margin-bottom: 1.2rem; color: #ffdd2d; font-size: 1.2rem;">T-сберегатель</h3>
+            <p>© 2025 Разработано в рамках Хакатона командой Wellery.</p>
+            <p>Веб-приложение построено на Flask с использованием современных технологий.</p>
+            
+            <div class="footer-links">
+                <a href="/app/">
+                    <i class="fas fa-external-link-alt"></i>
+                    Веб-приложение
+                </a>
+                <a href="mailto:support@tsberegatel.ru">
+                    <i class="fas fa-envelope"></i>
+                    Поддержка
+                </a>
+                <a href="#features">
+                    <i class="fas fa-info-circle"></i>
+                    О приложении
+                </a>
+            </div>
+            
+            <!-- <p style="margin-top: 1.5rem; font-size: 0.8rem; opacity: 0.6;">
+                <i class="fas fa-code"></i>
+                Flask | Python 3.9+ | SQLite | JavaScript
+            </p> -->
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        const hamburger = document.querySelector('.hamburger');
+        const navLinks = document.querySelector('.nav-links');
+
+        hamburger.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+            hamburger.classList.toggle('active');
+        });
+
+        // Прогресс-бар скролла
+        window.addEventListener('scroll', () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            document.getElementById('scrollProgress').style.width = scrolled + '%';
+        });
+
+        // Плавная навигация
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                if(targetId === '#') return;
+                
+                const targetElement = document.querySelector(targetId);
+                if(targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 70,
+                        behavior: 'smooth'
+                    });
+                    
+                    // Закрываем мобильное меню если открыто
+                    navLinks.classList.remove('active');
+                    hamburger.classList.remove('active');
+                }
+            });
+        });
+
+        // Анимация при скролле
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if(entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+        // Наблюдаем за элементами
+        document.querySelectorAll('.feature-card, .preview-image, .stat-card, .screenshot').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            observer.observe(el);
+        });
+
+        // Трекер кликов на кнопки
+        document.querySelectorAll('.online-btn, .download-btn, .launch-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                console.log('Клик на кнопку:', this.textContent.trim());
+                // Здесь можно добавить аналитику
+            });
+        });
+
+        // Показываем текущий год в футере
+        document.addEventListener('DOMContentLoaded', () => {
+            const yearElement = document.querySelector('footer p:first-child');
+            if(yearElement) {
+                const currentYear = new Date().getFullYear();
+                yearElement.innerHTML = yearElement.innerHTML.replace('2025', currentYear);
+            }
+            
+            // Анимация статистики
+            const statNumbers = document.querySelectorAll('.stat-number');
+            statNumbers.forEach(stat => {
+                const finalValue = stat.textContent;
+                stat.textContent = '0';
+                
+                const observer = new IntersectionObserver((entries) => {
+                    if(entries[0].isIntersecting) {
+                        animateNumber(stat, finalValue);
+                        observer.unobserve(stat);
+                    }
+                }, { threshold: 0.5 });
+                
+                observer.observe(stat);
+            });
+        });
+
+        // Анимация чисел
+        function animateNumber(element, finalValue) {
+            let current = 0;
+            const increment = finalValue.includes('%') 
+                ? parseFloat(finalValue) / 40 
+                : parseFloat(finalValue.replace(/[^0-9.]/g, '')) / 40;
+            const timer = setInterval(() => {
+                current += increment;
+                if(finalValue.includes('%')) {
+                    element.textContent = Math.min(Math.round(current), parseFloat(finalValue)) + '%';
+                } else if(finalValue.includes('к')) {
+                    element.textContent = Math.min(Math.round(current/1000), parseFloat(finalValue.replace('к', ''))) + 'к';
+                } else if(finalValue.includes('+')) {
+                    element.textContent = Math.min(Math.round(current), parseFloat(finalValue.replace('+', ''))) + '+';
+                }
+                
+                if(current >= parseFloat(finalValue.replace(/[^0-9.]/g, ''))) {
+                    clearInterval(timer);
+                    element.textContent = finalValue;
+                }
+            }, 20);
+        }
+    </script>
+</body>
+</html>
