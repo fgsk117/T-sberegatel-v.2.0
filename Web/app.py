@@ -8,7 +8,6 @@ from models import db
 from routes import api
 from telegram_bot import init_telegram_bot
 
-# ===== ГЛОБАЛЬНАЯ ПЕРЕМЕННАЯ ДЛЯ БОТА =====
 telegram_bot = None
 
 
@@ -18,7 +17,6 @@ def create_app():
                 static_folder='static',
                 template_folder='templates')
     
-    # Конфигурация
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
         'DATABASE_URL', 
         'sqlite:///rational_assistant.db'
@@ -27,15 +25,12 @@ def create_app():
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
     app.config['TELEGRAM_BOT_TOKEN'] = os.getenv('TELEGRAM_BOT_TOKEN')  # НОВОЕ
     
-    # Инициализация расширений
     db.init_app(app)
     CORS(app)
     
-    # Регистрация blueprints
     app.register_blueprint(api)
     
-    # ========== МАРШРУТЫ ==========
-    
+  
     @app.route('/')
     def landing():
         return render_template('landing.html')
@@ -80,7 +75,6 @@ def start_telegram_bot(app):
         
         telegram_bot = init_telegram_bot(token, db.session)
         
-        # Создаем новый event loop для этого потока
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
@@ -97,7 +91,6 @@ if __name__ == '__main__':
     app = create_app()
     init_db(app)
     
-    # ===== ЗАПУСК TELEGRAM БОТА =====
     bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
     
     if bot_token:

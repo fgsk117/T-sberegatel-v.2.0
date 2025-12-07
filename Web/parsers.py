@@ -1,4 +1,3 @@
-# parsers.py
 import requests
 from urllib.parse import urlparse
 
@@ -21,7 +20,6 @@ class ProductParser:
                 else:
                     return {'error': 'Неверный формат URL Wildberries'}
 
-                # API запрос (dest=-1257786 для Москвы, spp=30 для скидок, appType=1 для web)
                 api_url = f'https://card.wb.ru/cards/v2/detail?appType=1&curr=rub&dest=-1257786&spp=30&nm={product_id}'
                 headers = {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -40,10 +38,9 @@ class ProductParser:
                 price = product.get('salePriceU', 0) / 100  # В копейках
                 category = product.get('subj_name', product.get('subj_root_name', 'Неизвестно'))
 
-                # Image URL: алгоритм корзины (basket-01..basket-15)
                 vol = product_id // 100000
                 part = product_id // 1000
-                basket_num = (vol % 100) + 1  # Или (product_id // 10000000 % 100 + 1), но для вашего ID vol=4447, basket ~05
+                basket_num = (vol % 100) + 1 
                 basket = f'basket-{basket_num:02d}.wb.ru'
                 image_url = f'https://{basket}/vol{vol}/part{part}/{product_id}/images/c516x688/1.jpg'
 
@@ -55,11 +52,9 @@ class ProductParser:
                 }
 
             elif 'ozon.ru' in domain:
-                # Извлекаем ID или slug из /product/{id-or-slug}
                 path_parts = parsed_url.path.split('/')
                 if 'product' in path_parts and len(path_parts) > 2:
                     product_slug = path_parts[path_parts.index('product') + 1]
-                    # Если slug, но для API нужен ID; предполагаем URL с ID
                     try:
                         product_id = int(product_slug.split('-')[-1]) if '-' in product_slug else int(product_slug)
                     except ValueError:
@@ -67,7 +62,6 @@ class ProductParser:
                 else:
                     return {'error': 'Неверный формат URL Ozon'}
 
-                # Ozon API (v2, json)
                 api_url = f'https://www.ozon.ru/api/composer-api.bx/page/json/v2?url=/product/{product_id}'
                 headers = {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -78,7 +72,7 @@ class ProductParser:
                 response = requests.get(api_url, headers=headers, timeout=10)
                 response.raise_for_status()
                 json_data = response.json()
-                # Данные в widgetStates, найти главный widget
+
                 widgets = json_data.get('widgetStates', {})
                 main_widget_key = next((k for k in widgets if 'webProductHeading' in k), None)
                 if not main_widget_key:
@@ -96,7 +90,7 @@ class ProductParser:
                 seo_widget_key = next((k for k in widgets if 'seoBreadcrumbs' in k), None)
                 if seo_widget_key:
                     breadcrumbs = widgets[seo_widget_key].get('breadcrumbs', [])
-                    category = ' / '.join([b.get('name', '') for b in breadcrumbs[1:]])  # Пропуск главной
+                    category = ' / '.join([b.get('name', '') for b in breadcrumbs[1:]])
 
                 image_widget_key = next((k for k in widgets if 'webGallery' in k), None)
                 image_data = widgets.get(image_widget_key, {}).get('images', [])

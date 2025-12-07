@@ -12,7 +12,6 @@ class PurchaseAnalyzer:
             category=category
         ).first() is not None
         
-        # Находим подходящий диапазон цен
         price_range = PriceRange.query.filter(
             PriceRange.user_id == user.id,
             PriceRange.min_price <= price,
@@ -23,11 +22,9 @@ class PurchaseAnalyzer:
         
         # ===== ФИНАНСОВЫЙ АНАЛИЗ =====
         
-        # 1. Проверяем, достаточно ли накоплений
         can_afford_now = price <= user.current_savings
         shortage = max(0, price - user.current_savings)
         
-        # 2. Рассчитываем, через сколько дней можно накопить
         savings_days = 0
         savings_plan = None
         
@@ -36,7 +33,7 @@ class PurchaseAnalyzer:
             daily_savings = user.monthly_savings / 30
             savings_days = int(shortage / daily_savings) + 1
             
-            # Создаём план накопления
+            # План накопления
             savings_plan = {
                 'shortage': shortage,
                 'daily_savings': daily_savings,
@@ -45,11 +42,6 @@ class PurchaseAnalyzer:
                 'monthly_impact': (price / user.salary * 100) if user.salary > 0 else 0
             }
         
-        # 3. Рассчитываем рекомендуемый период ожидания
-        # Это МАКСИМУМ из:
-        # - период охлаждения по цене
-        # - период накопления
-        # - дополнительный период для крупных покупок
         
         extra_days = 0
         if price > user.salary * 0.5:  # Если покупка > 50% зарплаты
@@ -65,7 +57,6 @@ class PurchaseAnalyzer:
         reasons = []
         financial_warnings = []
         
-        # Фактор 1: Цена относительно зарплаты
         if user.salary > 0:
             price_ratio = (price / user.salary) * 100
             if price_ratio > 100:
@@ -83,7 +74,6 @@ class PurchaseAnalyzer:
                 impulse_score += 15
                 reasons.append(f"💵 Цена составляет {price_ratio:.0f}% от зарплаты")
         
-        # Фактор 2: Накопления
         if not can_afford_now:
             impulse_score += 35
             reasons.append(f"🏦 Недостаточно накоплений (нужно ещё {shortage:,.0f} ₽)")
@@ -105,12 +95,10 @@ class PurchaseAnalyzer:
             impulse_score += 10
             reasons.append(f"⚠️ Покупка заберёт {(price/user.current_savings*100):.0f}% накоплений")
         
-        # Фактор 3: Категория в blacklist
         if is_blacklisted:
             impulse_score = 100
             reasons.append(f"🚫 Категория '{category}' в чёрном списке")
         
-        # Фактор 4: Влияние на финансовую подушку безопасности
         if user.current_savings > 0:
             # Идеально иметь подушку = 3-6 месячных расходов
             ideal_cushion = user.salary * 3

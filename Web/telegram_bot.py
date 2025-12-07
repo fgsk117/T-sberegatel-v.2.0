@@ -134,7 +134,6 @@ class TelegramNotificationBot:
                 f"{'🚫 В черном списке' if p.is_blacklisted else ''}\n\n"
             )
         
-        # Добавляем кнопки для быстрых действий
         keyboard = [[
             InlineKeyboardButton("📊 Статистика", callback_data="stats"),
             InlineKeyboardButton("⚙️ Настройки", callback_data="settings")
@@ -258,7 +257,6 @@ class TelegramNotificationBot:
             await self.settings_command(update, context)
         
         elif query.data.startswith("remind_"):
-            # Обработка напоминания: remind_keep_123 или remind_cancel_123
             action, purchase_id = query.data.split("_")[1], int(query.data.split("_")[2])
             from models import Purchase
             
@@ -283,8 +281,6 @@ class TelegramNotificationBot:
                     f"💰 Вы сэкономили {purchase.price:,.0f} ₽! 🎉\n\n"
                     f"Отличное решение! Продолжайте в том же духе."
                 )
-    
-    # ===== УВЕДОМЛЕНИЯ =====
     
     async def send_notification(self, chat_id: str, message: str, parse_mode='HTML', reply_markup=None):
         """Отправить уведомление пользователю"""
@@ -358,18 +354,15 @@ class TelegramNotificationBot:
         if not user or not user.telegram_chat_id or not user.telegram_notifications_enabled:
             return
         
-        # Проверяем, что покупка все еще в ожидании
         if purchase.status != 'pending':
             return
         
         now = datetime.utcnow()
         days_left = (purchase.cooling_end_date - now).days
         
-        # Если период уже закончился, не отправляем напоминание
         if days_left < 0:
             return
         
-        # Случайные мотивирующие сообщения
         messages = [
             f"🤔 Все еще думаете о покупке?\n\n"
             f"📦 <b>{purchase.name}</b>\n"
@@ -396,12 +389,10 @@ class TelegramNotificationBot:
             f"Это все еще актуально? 🤷",
         ]
         
-        # Выбираем случайное сообщение на основе ID покупки (для консистентности)
         import random
         random.seed(purchase.id + now.day)
         message = random.choice(messages)
         
-        # Добавляем кнопки действий
         keyboard = [[
             InlineKeyboardButton("✅ Да, хочу", callback_data=f"remind_keep_{purchase.id}"),
             InlineKeyboardButton("❌ Передумал", callback_data=f"remind_cancel_{purchase.id}")
@@ -470,8 +461,6 @@ class TelegramNotificationBot:
         
         await self.send_notification(user.telegram_chat_id, message)
     
-    # ===== ПЛАНИРОВЩИК =====
-    
     def check_cooling_periods(self):
         """Проверка окончания периодов охлаждения (выполняется каждый час)"""
         from models import Purchase
@@ -496,26 +485,20 @@ class TelegramNotificationBot:
         
         now = datetime.utcnow()
         
-        # Получаем все покупки в периоде ожидания
         pending_purchases = Purchase.query.filter(
             Purchase.status == 'pending',
-            Purchase.cooling_end_date > now  # Период еще не закончился
+            Purchase.cooling_end_date > now
         ).all()
         
         for purchase in pending_purchases:
-            # Вычисляем прогресс периода охлаждения
             total_days = purchase.cooling_period_days
             days_passed = (now - purchase.created_at).days
             days_left = (purchase.cooling_end_date - now).days
             
-            # Отправляем напоминания только если:
-            # 1. Прошло минимум 30% периода охлаждения
-            # 2. Осталось минимум 1 день до конца
             if days_passed >= total_days * 0.3 and days_left >= 1:
-                # Проверяем, что с момента создания прошло достаточно времени
-                # чтобы не спамить сразу после добавления
+
                 hours_since_creation = (now - purchase.created_at).total_seconds() / 3600
-                if hours_since_creation >= 12:  # Минимум 12 часов с момента создания
+                if hours_since_creation >= 12:
                     asyncio.run(self.send_periodic_reminder(purchase))
     
     def send_weekly_stats(self):
@@ -533,23 +516,20 @@ class TelegramNotificationBot:
     
     def start_scheduler(self):
         """Запуск планировщика задач"""
-        # Проверка периодов охлаждения каждый час
         self.scheduler.add_job(
             self.check_cooling_periods,
-            CronTrigger(minute=0),  # Каждый час в :00
+            CronTrigger(minute=0),
             id='check_cooling',
             replace_existing=True
         )
         
-        # Периодические напоминания каждые 12 часов (в 9:00 и 21:00)
         self.scheduler.add_job(
             self.send_periodic_reminders,
-            CronTrigger(hour='9,21', minute=0),  # В 9:00 и 21:00
+            CronTrigger(hour='9,21', minute=0),
             id='periodic_reminders',
             replace_existing=True
         )
         
-        # Еженедельная статистика (понедельник 9:00)
         self.scheduler.add_job(
             self.send_weekly_stats,
             CronTrigger(day_of_week='mon', hour=9, minute=0),
@@ -564,7 +544,6 @@ class TelegramNotificationBot:
         """Запуск бота"""
         self.application = Application.builder().token(self.token).build()
         
-        # Регистрация обработчиков команд
         self.application.add_handler(CommandHandler("start", self.start_command))
         self.application.add_handler(CommandHandler("link", self.link_command))
         self.application.add_handler(CommandHandler("unlink", self.unlink_command))
@@ -573,10 +552,8 @@ class TelegramNotificationBot:
         self.application.add_handler(CommandHandler("settings", self.settings_command))
         self.application.add_handler(CallbackQueryHandler(self.button_callback))
         
-        # Запуск планировщика
         self.start_scheduler()
         
-        # Запуск бота
         await self.application.initialize()
         await self.application.start()
         await self.application.updater.start_polling()
@@ -590,7 +567,6 @@ class TelegramNotificationBot:
         logger.info("Bot stopped")
 
 
-# Глобальный экземпляр бота
 bot_instance = None
 
 

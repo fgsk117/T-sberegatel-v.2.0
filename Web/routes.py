@@ -9,7 +9,6 @@ import asyncio
 api = Blueprint('api', __name__, url_prefix='/api')
 
 
-# ===== AUTH =====
 
 @api.route('/auth/login', methods=['POST'])
 def login():
@@ -45,7 +44,6 @@ def register():
     if User.query.filter_by(nickname=nickname).first():
         return jsonify({'error': 'Никнейм уже занят'}), 400
     
-    # Создаем пользователя
     user = User(
         nickname=nickname,
         salary=float(data.get('salary', 100000)),
@@ -56,7 +54,6 @@ def register():
     
     db.session.add(user)
     
-    # Добавляем дефолтные диапазоны цен
     default_ranges = [
         PriceRange(user=user, min_price=0, max_price=15000, cooling_days=1),
         PriceRange(user=user, min_price=15000, max_price=50000, cooling_days=7),
@@ -73,7 +70,6 @@ def register():
     }), 201
 
 
-# ===== PRODUCT PARSING =====
 
 @api.route('/parse-product', methods=['POST'])
 def parse_product():
@@ -92,7 +88,6 @@ def parse_product():
     return jsonify(result)
 
 
-# ===== USERS =====
 
 @api.route('/users/<int:user_id>', methods=['GET'])
 def get_user(user_id):
@@ -120,7 +115,6 @@ def update_user(user_id):
     return jsonify({'message': 'Пользователь обновлен', 'user': user.to_dict()})
 
 
-# ===== PURCHASES =====
 
 @api.route('/purchases', methods=['POST'])
 def create_purchase():
@@ -158,14 +152,12 @@ def create_purchase():
     db.session.add(purchase)
     db.session.commit()
     
-    # ===== ОТПРАВКА TELEGRAM УВЕДОМЛЕНИЯ =====
     bot = get_bot()
     if bot and analysis['risk_level'] in ['high', 'medium']:
         try:
             asyncio.run(bot.notify_high_impulse(purchase, analysis))
         except Exception as e:
             print(f"Ошибка отправки уведомления: {e}")
-    # ========================================
     
     return jsonify({
         'id': purchase.id,
@@ -219,8 +211,6 @@ def delete_purchase(purchase_id):
     return jsonify({'message': 'Покупка удалена'})
 
 
-# ===== PRICE RANGES =====
-
 @api.route('/price-ranges/<int:user_id>', methods=['GET'])
 def get_price_ranges(user_id):
     """Получить диапазоны цен пользователя"""
@@ -260,8 +250,6 @@ def delete_price_range(range_id):
     db.session.commit()
     return jsonify({'message': 'Диапазон удален'})
 
-
-# ===== BLACKLIST =====
 
 @api.route('/blacklist/<int:user_id>', methods=['GET'])
 def get_blacklist(user_id):
@@ -309,8 +297,6 @@ def remove_from_blacklist(category_id):
     db.session.commit()
     return jsonify({'message': 'Категория удалена'})
 
-
-# ===== STATISTICS =====
 
 @api.route('/statistics/<int:user_id>', methods=['GET'])
 def get_statistics(user_id):
