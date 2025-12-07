@@ -1,8 +1,3 @@
-"""
-API Routes
-Маршруты API для Рационального Ассистента
-"""
-
 from flask import request, jsonify, Blueprint
 from datetime import datetime, timedelta
 from models import db, User, Purchase, PriceRange, BlacklistCategory

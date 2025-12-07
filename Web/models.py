@@ -1,8 +1,3 @@
-"""
-Database Models
-Модели базы данных для Рационального Ассистента
-"""
-
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 

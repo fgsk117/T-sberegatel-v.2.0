@@ -1,5 +1,3 @@
-"""Рациональный Ассистент - Main Application"""
-
 from flask import Flask, render_template, send_file
 from flask_cors import CORS
 import os
