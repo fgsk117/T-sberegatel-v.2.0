@@ -70,7 +70,8 @@ class TelegramNotificationBot:
             "Теперь вы будете получать уведомления о:\n"
             "• Окончании периода охлаждения\n"
             "• Достижении целей накопления\n"
-            "• Импульсивных покупках\n\n"
+            "• Импульсивных покупках\n"
+            "• Периодические напоминания во время ожидания\n\n"
             "Управление: /settings"
         )
     
@@ -177,7 +178,7 @@ class TelegramNotificationBot:
             f"📊 <b>Ваша статистика</b>\n\n"
             f"👤 Пользователь: {user.nickname}\n"
             f"💰 Зарплата: {user.salary:,.0f} ₽\n"
-            f"🏦 Накопления: {user.current_savings:,.0f} ₽\n\n"
+            f"🦊 Накопления: {user.current_savings:,.0f} ₽\n\n"
             f"📈 <b>Покупки:</b>\n"
             f"Всего: {total}\n"
             f"⏳ Ожидают: {pending}\n"
@@ -223,6 +224,7 @@ class TelegramNotificationBot:
             f"• ⏰ Окончании периода охлаждения\n"
             f"• 💰 Достижении целей накопления\n"
             f"• 🎯 Новых покупках\n"
+            f"• 🔔 Периодических напоминаниях\n"
             f"• 📊 Еженедельной статистике",
             parse_mode='HTML',
             reply_markup=reply_markup
@@ -254,6 +256,33 @@ class TelegramNotificationBot:
         
         elif query.data == "settings":
             await self.settings_command(update, context)
+        
+        elif query.data.startswith("remind_"):
+            # Обработка напоминания: remind_keep_123 или remind_cancel_123
+            action, purchase_id = query.data.split("_")[1], int(query.data.split("_")[2])
+            from models import Purchase
+            
+            purchase = Purchase.query.get(purchase_id)
+            if not purchase:
+                await query.edit_message_text("❌ Покупка не найдена")
+                return
+            
+            if action == "keep":
+                await query.edit_message_text(
+                    f"✅ Хорошо, напомню вам о покупке позже!\n\n"
+                    f"📦 {purchase.name}\n"
+                    f"💰 {purchase.price:,.0f} ₽\n\n"
+                    f"Период охлаждения продолжается до {purchase.cooling_end_date.strftime('%d.%m.%Y')}"
+                )
+            elif action == "cancel":
+                purchase.status = 'rejected'
+                self.db.commit()
+                await query.edit_message_text(
+                    f"❌ Покупка отменена!\n\n"
+                    f"📦 {purchase.name}\n"
+                    f"💰 Вы сэкономили {purchase.price:,.0f} ₽! 🎉\n\n"
+                    f"Отличное решение! Продолжайте в том же духе."
+                )
     
     # ===== УВЕДОМЛЕНИЯ =====
     
@@ -286,7 +315,7 @@ class TelegramNotificationBot:
         
         message = (
             f"⏰ <b>Период ожидания закончился!</b>\n\n"
-            f"🛍 <b>{purchase.name}</b>\n"
+            f"🛒 <b>{purchase.name}</b>\n"
             f"💰 {purchase.price:,.0f} ₽\n"
             f"📦 {purchase.category}\n\n"
             f"Вы все еще хотите это купить?"
@@ -310,7 +339,7 @@ class TelegramNotificationBot:
         
         message = (
             f"{risk_emoji[analysis['risk_level']]} <b>Новая покупка добавлена</b>\n\n"
-            f"🛍 <b>{purchase.name}</b>\n"
+            f"🛒 <b>{purchase.name}</b>\n"
             f"💰 {purchase.price:,.0f} ₽\n"
             f"📊 Риск импульсивности: {analysis['impulse_score']}%\n\n"
             f"💡 {analysis['recommendation']}\n"
@@ -318,6 +347,68 @@ class TelegramNotificationBot:
         )
         
         await self.send_notification(user.telegram_chat_id, message)
+    
+    async def send_periodic_reminder(self, purchase):
+        """
+        Периодическое напоминание во время периода охлаждения
+        """
+        from models import User
+        
+        user = User.query.get(purchase.user_id)
+        if not user or not user.telegram_chat_id or not user.telegram_notifications_enabled:
+            return
+        
+        # Проверяем, что покупка все еще в ожидании
+        if purchase.status != 'pending':
+            return
+        
+        now = datetime.utcnow()
+        days_left = (purchase.cooling_end_date - now).days
+        
+        # Если период уже закончился, не отправляем напоминание
+        if days_left < 0:
+            return
+        
+        # Случайные мотивирующие сообщения
+        messages = [
+            f"🤔 Все еще думаете о покупке?\n\n"
+            f"📦 <b>{purchase.name}</b>\n"
+            f"💰 {purchase.price:,.0f} ₽\n\n"
+            f"Осталось подождать: {days_left} дн.\n"
+            f"Возможно, желание пройдет? 🤷‍♂️",
+            
+            f"⏰ Напоминание о покупке\n\n"
+            f"📦 <b>{purchase.name}</b>\n"
+            f"💰 {purchase.price:,.0f} ₽\n\n"
+            f"До конца периода ожидания: {days_left} дн.\n"
+            f"Вам действительно это нужно? 🤔",
+            
+            f"💭 Период обдумывания продолжается\n\n"
+            f"📦 <b>{purchase.name}</b>\n"
+            f"💰 {purchase.price:,.0f} ₽\n\n"
+            f"Еще {days_left} дн до решения.\n"
+            f"Может, передумаете? Сэкономите деньги! 💰",
+            
+            f"🔔 Проверка желания купить\n\n"
+            f"📦 <b>{purchase.name}</b>\n"
+            f"💰 {purchase.price:,.0f} ₽\n\n"
+            f"Осталось {days_left} дн охлаждения.\n"
+            f"Это все еще актуально? 🤷",
+        ]
+        
+        # Выбираем случайное сообщение на основе ID покупки (для консистентности)
+        import random
+        random.seed(purchase.id + now.day)
+        message = random.choice(messages)
+        
+        # Добавляем кнопки действий
+        keyboard = [[
+            InlineKeyboardButton("✅ Да, хочу", callback_data=f"remind_keep_{purchase.id}"),
+            InlineKeyboardButton("❌ Передумал", callback_data=f"remind_cancel_{purchase.id}")
+        ]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await self.send_notification(user.telegram_chat_id, message, reply_markup=reply_markup)
     
     async def notify_savings_goal(self, user, purchase, days_left):
         """Уведомление о приближении к цели накопления"""
@@ -365,7 +456,7 @@ class TelegramNotificationBot:
         message = (
             f"📊 <b>Итоги недели</b>\n\n"
             f"👤 {user.nickname}\n"
-            f"🛍 Покупок добавлено: {week_purchases}\n"
+            f"🛒 Покупок добавлено: {week_purchases}\n"
             f"💸 Потрачено: {week_spent:,.0f} ₽\n"
             f"💚 Сэкономлено: {week_saved:,.0f} ₽\n\n"
         )
@@ -395,6 +486,38 @@ class TelegramNotificationBot:
         for purchase in ready_purchases:
             asyncio.run(self.notify_cooling_ended(purchase))
     
+    def send_periodic_reminders(self):
+        """
+        Отправка периодических напоминаний о покупках в периоде охлаждения
+        Выполняется каждые 12 часов
+        """
+        from models import Purchase
+        import asyncio
+        
+        now = datetime.utcnow()
+        
+        # Получаем все покупки в периоде ожидания
+        pending_purchases = Purchase.query.filter(
+            Purchase.status == 'pending',
+            Purchase.cooling_end_date > now  # Период еще не закончился
+        ).all()
+        
+        for purchase in pending_purchases:
+            # Вычисляем прогресс периода охлаждения
+            total_days = purchase.cooling_period_days
+            days_passed = (now - purchase.created_at).days
+            days_left = (purchase.cooling_end_date - now).days
+            
+            # Отправляем напоминания только если:
+            # 1. Прошло минимум 30% периода охлаждения
+            # 2. Осталось минимум 1 день до конца
+            if days_passed >= total_days * 0.3 and days_left >= 1:
+                # Проверяем, что с момента создания прошло достаточно времени
+                # чтобы не спамить сразу после добавления
+                hours_since_creation = (now - purchase.created_at).total_seconds() / 3600
+                if hours_since_creation >= 12:  # Минимум 12 часов с момента создания
+                    asyncio.run(self.send_periodic_reminder(purchase))
+    
     def send_weekly_stats(self):
         """Отправка еженедельной статистики (каждый понедельник в 9:00)"""
         from models import User
@@ -418,6 +541,14 @@ class TelegramNotificationBot:
             replace_existing=True
         )
         
+        # Периодические напоминания каждые 12 часов (в 9:00 и 21:00)
+        self.scheduler.add_job(
+            self.send_periodic_reminders,
+            CronTrigger(hour='9,21', minute=0),  # В 9:00 и 21:00
+            id='periodic_reminders',
+            replace_existing=True
+        )
+        
         # Еженедельная статистика (понедельник 9:00)
         self.scheduler.add_job(
             self.send_weekly_stats,
@@ -427,7 +558,7 @@ class TelegramNotificationBot:
         )
         
         self.scheduler.start()
-        logger.info("Scheduler started")
+        logger.info("Scheduler started with periodic reminders")
     
     async def start_bot(self):
         """Запуск бота"""
@@ -450,7 +581,7 @@ class TelegramNotificationBot:
         await self.application.start()
         await self.application.updater.start_polling()
         
-        logger.info("Bot started successfully!")
+        logger.info("Bot started successfully with periodic reminders!")
     
     def stop(self):
         """Остановка бота"""
