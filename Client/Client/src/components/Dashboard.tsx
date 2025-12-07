@@ -1,0 +1,97 @@
+import { useState } from 'react';
+import { useUser } from '../contexts/UserContext';
+import { Home, ShoppingCart, Settings, History, User, LogOut, Shield } from 'lucide-react';
+import ProfileSetup from './ProfileSetup';
+import PurchasesList from './PurchasesList';
+import AddPurchase from './AddPurchase';
+import SettingsPage from './SettingsPage';
+import PurchaseHistory from './PurchaseHistory';
+import AdminPanel from './AdminPanel';
+
+type Page = 'home' | 'purchases' | 'add-purchase' | 'settings' | 'history' | 'admin';
+
+export default function Dashboard() {
+  const [currentPage, setCurrentPage] = useState<Page>('home');
+  const { user, logout } = useUser();
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'home':
+        return <ProfileSetup />;
+      case 'purchases':
+        return <PurchasesList onAddPurchase={() => setCurrentPage('add-purchase')} />;
+      case 'add-purchase':
+        return <AddPurchase onBack={() => setCurrentPage('purchases')} />;
+      case 'settings':
+        return <SettingsPage />;
+      case 'history':
+        return <PurchaseHistory />;
+      case 'admin':
+        return <AdminPanel onBack={() => setCurrentPage('home')} />;
+      default:
+        return <ProfileSetup />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-black">
+      <header className="bg-zinc-900 border-b border-zinc-800">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-[#FFDD2D] rounded-2xl flex items-center justify-center">
+              <span className="text-2xl font-black text-black">T</span>
+            </div>
+            <h1 className="text-2xl font-black text-white">Т-сбережение</h1>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <div className="text-[#FFDD2D] font-bold">@{user?.username}</div>
+            </div>
+            <button
+              onClick={logout}
+              className="p-2 hover:bg-zinc-800 rounded-xl transition-colors"
+              title="Выйти"
+            >
+              <LogOut className="w-5 h-5 text-gray-400" />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <nav className="flex gap-2 mb-6 overflow-x-auto pb-2">
+          {[
+            { key: 'home', icon: User, label: 'Профиль' },
+            { key: 'purchases', icon: ShoppingCart, label: 'Желаемое' },
+            { key: 'history', icon: History, label: 'История' },
+            { key: 'settings', icon: Settings, label: 'Настройки' },
+            { key: 'admin', icon: Shield, label: 'Админ' },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive =
+              currentPage === tab.key ||
+              (tab.key === 'purchases' && currentPage === 'add-purchase');
+
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setCurrentPage(tab.key as Page)}
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all whitespace-nowrap ${
+                  isActive
+                    ? 'bg-[#FFDD2D] text-black'
+                    : 'bg-zinc-900 text-white hover:bg-zinc-800'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        <main>{renderPage()}</main>
+      </div>
+    </div>
+  );
+}
