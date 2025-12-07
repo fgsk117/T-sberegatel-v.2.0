@@ -66,7 +66,11 @@ npx cap open android
 
 ## Web-реализация
 
+### Запуск
 
+pip install -r requirement.txt
+
+python app.py
 
 ## Ссылки
 Сайт-визитка: https://т-сберегатель.рф
