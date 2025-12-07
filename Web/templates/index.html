@@ -879,953 +879,923 @@
         </div>
     </div>
     
-    <script>
-        let currentUser = null;
+   <script>
+    let currentUser = null;
+    
+    // Auth Functions
+    async function handleLogin(e) {
+        e.preventDefault();
+        const nickname = document.getElementById('login-nickname').value.trim();
         
-        // Auth Functions
-        async function handleLogin(e) {
-            e.preventDefault();
-            const nickname = document.getElementById('login-nickname').value.trim();
+        if (!nickname) return;
+        
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nickname })
+            });
             
-            if (!nickname) return;
-            
-            try {
-                const res = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nickname })
-                });
-                
-                if (res.ok) {
-                    const data = await res.json();
-                    currentUser = data.user;
-                    showApp();
-                } else {
-                    alert('❌ Пользователь не найден. Попробуйте зарегистрироваться.');
-                }
-            } catch (error) {
-                alert('❌ Ошибка подключения к серверу');
-                console.error(error);
+            if (res.ok) {
+                const data = await res.json();
+                currentUser = data.user;
+                showApp();
+            } else {
+                alert('❌ Пользователь не найден. Попробуйте зарегистрироваться.');
             }
+        } catch (error) {
+            alert('❌ Ошибка подключения к серверу');
+            console.error(error);
         }
+    }
+    
+    async function handleRegister(e) {
+        e.preventDefault();
+        const nickname = document.getElementById('register-nickname').value.trim();
+        const salary = document.getElementById('register-salary').value;
+        const monthly_savings = document.getElementById('register-savings').value;
+        const current_savings = document.getElementById('register-current').value;
         
-        async function handleRegister(e) {
-            e.preventDefault();
-            const nickname = document.getElementById('register-nickname').value.trim();
-            const salary = document.getElementById('register-salary').value;
-            const monthly_savings = document.getElementById('register-savings').value;
-            const current_savings = document.getElementById('register-current').value;
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    nickname, 
+                    salary, 
+                    monthly_savings,
+                    current_savings,
+                    use_savings_calculation: true
+                })
+            });
             
-            try {
-                const res = await fetch('/api/auth/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        nickname, 
-                        salary, 
-                        monthly_savings,
-                        current_savings,
-                        use_savings_calculation: true
-                    })
-                });
-                
-                if (res.ok) {
-                    const data = await res.json();
-                    currentUser = data.user;
-                    showApp();
-                } else {
-                    const error = await res.json();
-                    alert('❌ ' + error.error);
-                }
-            } catch (error) {
-                alert('❌ Ошибка регистрации');
-                console.error(error);
+            if (res.ok) {
+                const data = await res.json();
+                currentUser = data.user;
+                showApp();
+            } else {
+                const error = await res.json();
+                alert('❌ ' + error.error);
             }
+        } catch (error) {
+            alert('❌ Ошибка регистрации');
+            console.error(error);
+        }
+    }
+    
+    function showApp() {
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('main-app').classList.add('active');
+        document.getElementById('userName').textContent = currentUser.nickname;
+        document.getElementById('userAvatar').textContent = currentUser.nickname[0].toUpperCase();
+        loadPendingPurchases();
+        loadStatistics();
+    }
+    
+    function logout() {
+        currentUser = null;
+        document.getElementById('main-app').classList.remove('active');
+        document.getElementById('auth-screen').style.display = 'flex';
+        document.getElementById('login-form').reset();
+    }
+    
+    function showLogin() {
+        document.getElementById('login-form').style.display = 'block';
+        document.getElementById('register-form').style.display = 'none';
+    }
+    
+    function showRegister() {
+        document.getElementById('login-form').style.display = 'none';
+        document.getElementById('register-form').style.display = 'block';
+    }
+    
+    // НОВАЯ ФУНКЦИЯ: Обновление currentUser из API
+    async function refreshCurrentUser() {
+        try {
+            const res = await fetch(`/api/users/${currentUser.id}`);
+            if (res.ok) {
+                const data = await res.json();
+                currentUser = data;
+                console.log('✅ Данные пользователя обновлены:', currentUser);
+            }
+        } catch (error) {
+            console.error('Ошибка обновления данных пользователя:', error);
+        }
+    }
+    
+    // Product Parser
+    async function parseProductUrl() {
+        const url = document.getElementById('product-url').value.trim();
+        if (!url) {
+            alert('Введите URL товара');
+            return;
         }
         
-        function showApp() {
-            document.getElementById('auth-screen').style.display = 'none';
-            document.getElementById('main-app').classList.add('active');
-            document.getElementById('userName').textContent = currentUser.nickname;
-            document.getElementById('userAvatar').textContent = currentUser.nickname[0].toUpperCase();
-            loadPendingPurchases();
-            loadStatistics();
-        }
+        const resultDiv = document.getElementById('parser-result');
+        resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>Парсинг товара...</p></div>';
+        resultDiv.classList.add('active');
         
-        function logout() {
-            currentUser = null;
-            document.getElementById('main-app').classList.remove('active');
-            document.getElementById('auth-screen').style.display = 'flex';
-            document.getElementById('login-form').reset();
-        }
-        
-        function showLogin() {
-            document.getElementById('login-form').style.display = 'block';
-            document.getElementById('register-form').style.display = 'none';
-        }
-        
-        function showRegister() {
-            document.getElementById('login-form').style.display = 'none';
-            document.getElementById('register-form').style.display = 'block';
-        }
-        
-        // Product Parser
-        async function parseProductUrl() {
-            const url = document.getElementById('product-url').value.trim();
-            if (!url) {
-                alert('Введите URL товара');
+        try {
+            const res = await fetch('/api/parse-product', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            });
+            
+            const data = await res.json();
+            
+            if (data.error) {
+                resultDiv.innerHTML = `<div style="color:#FF3B30;text-align:center;padding:20px;">❌ ${data.error}</div>`;
                 return;
             }
             
-            const resultDiv = document.getElementById('parser-result');
-            resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>Парсинг товара...</p></div>';
-            resultDiv.classList.add('active');
+            // Создаем покупку
+            const purchaseRes = await fetch('/api/purchases', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: currentUser.id,
+                    name: data.name,
+                    price: data.price,
+                    category: data.category,
+                    product_url: url,
+                    image_url: data.image_url
+                })
+            });
             
-            try {
-                const res = await fetch('/api/parse-product', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url })
-                });
+            const purchaseData = await purchaseRes.json();
+            const analysis = purchaseData.analysis;
+            
+            resultDiv.innerHTML = `
+                <div class="product-preview">
+                    ${data.image_url ? `<img src="${data.image_url}" class="product-image" onerror="this.style.display='none'">` : ''}
+                    <div class="product-details">
+                        <div class="product-name">${data.name}</div>
+                        <div class="product-price">${data.price.toLocaleString('ru-RU')} ₽</div>
+                        <div class="product-meta">
+                            <span class="product-tag">📦 ${data.category}</span>
+                        </div>
+                    </div>
+                </div>
                 
-                const data = await res.json();
+                <div class="impulse-meter">
+                    <div class="impulse-label">📊 Уровень импульсивности покупки</div>
+                    <div class="impulse-bar-container">
+                        <div class="impulse-bar ${analysis.risk_level}" style="width: ${analysis.impulse_score}%">
+                            ${analysis.impulse_score}%
+                        </div>
+                    </div>
+                    <div style="margin-top:16px;font-size:1.15em;font-weight:700;text-align:center;color:${
+                        analysis.risk_level === 'high' ? '#FF3B30' : 
+                        analysis.risk_level === 'medium' ? '#FFDD2D' : '#2DD36F'
+                    }">
+                        ${analysis.emoji} ${analysis.recommendation}
+                    </div>
+                    ${analysis.reasons.length > 0 ? `
+                        <div class="impulse-reasons">
+                            <div style="font-weight:600;margin-bottom:10px;">Факторы риска:</div>
+                            ${analysis.reasons.map(r => `<div class="impulse-reason">${r}</div>`).join('')}
+                        </div>
+                    ` : ''}
+                    <div style="margin-top:16px;padding:16px;background:#1F1F1F;border-radius:12px;text-align:center;">
+                        <p style="margin-bottom:8px;"><strong>Период охлаждения:</strong> ${analysis.cooling_days} дней</p>
+                        <p style="font-size:0.9em;color:#999;">Решение можно принять после ${new Date(purchaseData.purchase.cooling_end_date).toLocaleDateString('ru-RU')}</p>
+                    </div>
+                </div>
                 
-                if (data.error) {
-                    resultDiv.innerHTML = `<div style="color:#FF3B30;text-align:center;padding:20px;">❌ ${data.error}</div>`;
-                    return;
-                }
-                
-                // Создаем покупку
-                const purchaseRes = await fetch('/api/purchases', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: currentUser.id,
-                        name: data.name,
-                        price: data.price,
-                        category: data.category,
-                        product_url: url,
-                        image_url: data.image_url
-                    })
-                });
-                
-                const purchaseData = await purchaseRes.json();
-                const analysis = purchaseData.analysis;
-                
-                resultDiv.innerHTML = `
-                    <div class="product-preview">
-                        ${data.image_url ? `<img src="${data.image_url}" class="product-image" onerror="this.style.display='none'">` : ''}
-                        <div class="product-details">
-                            <div class="product-name">${data.name}</div>
-                            <div class="product-price">${data.price.toLocaleString('ru-RU')} ₽</div>
-                            <div class="product-meta">
-                                <span class="product-tag">📦 ${data.category}</span>
+                <button class="btn btn-primary" onclick="showScreen('pending')" style="width:100%;margin-top:16px;">
+                    📋 Товар добавлен в ожидание
+                </button>
+            `;
+            
+            document.getElementById('product-url').value = '';
+            await loadPendingPurchases();
+            
+        } catch (error) {
+            resultDiv.innerHTML = `<div style="color:#FF3B30;text-align:center;padding:20px;">❌ Ошибка: ${error.message}</div>`;
+            console.error(error);
+        }
+    }
+    
+    // Navigation
+    function showScreen(screenName) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        
+        document.getElementById(`${screenName}-screen`).classList.add('active');
+        event.target.classList.add('active');
+        
+        if (screenName === 'pending') loadPendingPurchases();
+        if (screenName === 'history') loadHistory();
+        if (screenName === 'settings') loadSettings();
+    }
+    
+    // Purchases
+    async function addPurchase(e) {
+        e.preventDefault();
+        
+        const name = document.getElementById('purchase-name').value;
+        const price = parseFloat(document.getElementById('purchase-price').value);
+        const category = document.getElementById('purchase-category').value;
+        const notes = document.getElementById('purchase-notes').value;
+        
+        try {
+            const res = await fetch('/api/purchases', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: currentUser.id,
+                    name, price, category, notes
+                })
+            });
+            
+            const data = await res.json();
+            showAnalysisModal(data);
+            
+            document.getElementById('add-form').reset();
+            await loadPendingPurchases();
+            
+        } catch (error) {
+            alert('❌ Ошибка добавления покупки');
+            console.error(error);
+        }
+    }
+    
+    // Показать модальное окно с анализом и выбором
+    function showAnalysisModal(data) {
+        const modal = document.getElementById('result-modal');
+        const content = document.getElementById('result-content');
+        const analysis = data.analysis;
+        const purchase = data.purchase;
+        
+        const canAffordNow = analysis.can_afford;
+        const isLowRisk = analysis.risk_level === 'low';
+        const isMediumRisk = analysis.risk_level === 'medium';
+        const isHighRisk = analysis.risk_level === 'high';
+        const isBlacklisted = analysis.is_blacklisted;
+        
+        let financialPlanHTML = '';
+        
+        if (analysis.savings_plan) {
+            const plan = analysis.savings_plan;
+            financialPlanHTML = `
+                <div style="margin-top:20px;padding:20px;background:#0A0A0A;border-radius:12px;border:2px solid #FFDD2D;">
+                    <h3 style="margin-bottom:16px;color:#FFDD2D;font-size:1.1em;">💰 План накопления</h3>
+                    
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                        <div style="text-align:center;padding:12px;background:#1F1F1F;border-radius:8px;">
+                            <div style="color:#999;font-size:0.85em;margin-bottom:4px;">Не хватает</div>
+                            <div style="font-size:1.4em;font-weight:800;color:#FF3B30;">${plan.shortage.toLocaleString('ru-RU')} ₽</div>
+                        </div>
+                        <div style="text-align:center;padding:12px;background:#1F1F1F;border-radius:8px;">
+                            <div style="color:#999;font-size:0.85em;margin-bottom:4px;">Дней накопления</div>
+                            <div style="font-size:1.4em;font-weight:800;color:#FFDD2D;">${plan.days_needed}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="padding:16px;background:#1F1F1F;border-radius:8px;margin-bottom:12px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <span style="color:#999;">Откладывать в день:</span>
+                            <span style="font-weight:700;color:#FFDD2D;">${Math.round(plan.daily_savings).toLocaleString('ru-RU')} ₽</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <span style="color:#999;">Откладывать в месяц:</span>
+                            <span style="font-weight:700;color:#FFDD2D;">${Math.round(plan.daily_savings * 30).toLocaleString('ru-RU')} ₽</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="color:#999;">Можно купить:</span>
+                            <span style="font-weight:700;color:#2DD36F;">${plan.target_date}</span>
+                        </div>
+                    </div>
+                    
+                    ${plan.monthly_impact > 0 ? `
+                        <div style="padding:12px;background:rgba(255,221,45,0.1);border-left:3px solid #FFDD2D;border-radius:4px;">
+                            <div style="font-size:0.9em;color:#FFDD2D;">
+                                💡 Покупка составит ${plan.monthly_impact.toFixed(0)}% от вашего месячного дохода
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+        
+        let financialHealthHTML = '';
+        if (analysis.financial_health) {
+            const health = analysis.financial_health;
+            const beforeMonths = health.before.savings_months;
+            const afterMonths = health.after.savings_months;
+            
+            financialHealthHTML = `
+                <div style="margin-top:20px;padding:20px;background:#0A0A0A;border-radius:12px;border:2px solid #333;">
+                    <h3 style="margin-bottom:16px;color:#fff;font-size:1.1em;">📊 Финансовое состояние</h3>
+                    
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                        <div style="padding:12px;background:#1F1F1F;border-radius:8px;text-align:center;">
+                            <div style="color:#999;font-size:0.85em;margin-bottom:4px;">До покупки</div>
+                            <div style="font-size:1.2em;font-weight:700;color:#2DD36F;">
+                                ${health.before.savings.toLocaleString('ru-RU')} ₽
+                            </div>
+                            <div style="color:#999;font-size:0.8em;margin-top:4px;">
+                                (${beforeMonths.toFixed(1)} мес)
+                            </div>
+                        </div>
+                        <div style="padding:12px;background:#1F1F1F;border-radius:8px;text-align:center;">
+                            <div style="color:#999;font-size:0.85em;margin-bottom:4px;">После покупки</div>
+                            <div style="font-size:1.2em;font-weight:700;color:${afterMonths < 1 ? '#FF3B30' : afterMonths < 3 ? '#FFDD2D' : '#2DD36F'};">
+                                ${health.after.savings.toLocaleString('ru-RU')} ₽
+                            </div>
+                            <div style="color:#999;font-size:0.8em;margin-top:4px;">
+                                (${afterMonths.toFixed(1)} мес)
                             </div>
                         </div>
                     </div>
                     
-                    <div class="impulse-meter">
-                        <div class="impulse-label">📊 Уровень импульсивности покупки</div>
-                        <div class="impulse-bar-container">
-                            <div class="impulse-bar ${analysis.risk_level}" style="width: ${analysis.impulse_score}%">
-                                ${analysis.impulse_score}%
+                    ${afterMonths < 1 ? `
+                        <div style="padding:12px;background:rgba(255,59,48,0.1);border-left:3px solid #FF3B30;border-radius:4px;">
+                            <div style="font-size:0.9em;color:#FF3B30;">
+                                ⚠️ После покупки подушка безопасности будет меньше 1 месяца
                             </div>
                         </div>
-                        <div style="margin-top:16px;font-size:1.15em;font-weight:700;text-align:center;color:${
-                            analysis.risk_level === 'high' ? '#FF3B30' : 
-                            analysis.risk_level === 'medium' ? '#FFDD2D' : '#2DD36F'
-                        }">
-                            ${analysis.emoji} ${analysis.recommendation}
-                        </div>
-                        ${analysis.reasons.length > 0 ? `
-                            <div class="impulse-reasons">
-                                <div style="font-weight:600;margin-bottom:10px;">Факторы риска:</div>
-                                ${analysis.reasons.map(r => `<div class="impulse-reason">${r}</div>`).join('')}
+                    ` : afterMonths < 3 ? `
+                        <div style="padding:12px;background:rgba(255,221,45,0.1);border-left:3px solid #FFDD2D;border-radius:4px;">
+                            <div style="font-size:0.9em;color:#FFDD2D;">
+                                💡 Рекомендуется иметь подушку безопасности минимум 3-6 месяцев
                             </div>
-                        ` : ''}
-                        <div style="margin-top:16px;padding:16px;background:#1F1F1F;border-radius:12px;text-align:center;">
-                            <p style="margin-bottom:8px;"><strong>Период охлаждения:</strong> ${analysis.cooling_days} дней</p>
-                            <p style="font-size:0.9em;color:#999;">Решение можно принять после ${new Date(purchaseData.purchase.cooling_end_date).toLocaleDateString('ru-RU')}</p>
                         </div>
+                    ` : `
+                        <div style="padding:12px;background:rgba(45,211,111,0.1);border-left:3px solid #2DD36F;border-radius:4px;">
+                            <div style="font-size:0.9em;color:#2DD36F;">
+                                ✅ У вас достаточная подушка безопасности
+                            </div>
+                        </div>
+                    `}
+                </div>
+            `;
+        }
+        
+        let warningsHTML = '';
+        if (analysis.financial_warnings && analysis.financial_warnings.length > 0) {
+            warningsHTML = `
+                <div style="margin-top:16px;padding:16px;background:rgba(255,221,45,0.05);border-radius:8px;border:1px solid rgba(255,221,45,0.2);">
+                    <div style="font-weight:600;margin-bottom:10px;color:#FFDD2D;">⚠️ Финансовые риски:</div>
+                    ${analysis.financial_warnings.map(w => `
+                        <div style="padding:8px;margin-bottom:6px;background:#1F1F1F;border-radius:6px;font-size:0.9em;">
+                            ${w}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        let actionButtonsHTML = '';
+        
+        if (isBlacklisted) {
+            actionButtonsHTML = `
+                <div style="margin-top:24px;padding:20px;background:rgba(255,59,48,0.1);border:2px solid #FF3B30;border-radius:12px;">
+                    <div style="text-align:center;margin-bottom:16px;">
+                        <div style="font-size:48px;margin-bottom:8px;">🚫</div>
+                        <h3 style="color:#FF3B30;margin-bottom:8px;">Покупка запрещена</h3>
+                        <p style="color:#999;font-size:0.9em;">Вы добавили эту категорию в чёрный список</p>
                     </div>
-                    
-                    <button class="btn btn-primary" onclick="showScreen('pending')" style="width:100%;margin-top:16px;">
-                        📋 Товар добавлен в ожидание
+                    <button class="btn btn-danger" onclick="deletePurchaseFromModal(${purchase.id})" style="width:100%;">
+                        🗑️ Удалить из списка
                     </button>
-                `;
-                
-                document.getElementById('product-url').value = '';
-                await loadPendingPurchases();
-                
-            } catch (error) {
-                resultDiv.innerHTML = `<div style="color:#FF3B30;text-align:center;padding:20px;">❌ Ошибка: ${error.message}</div>`;
-                console.error(error);
-            }
-        }
-        
-        // Navigation
-        function showScreen(screenName) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            
-            document.getElementById(`${screenName}-screen`).classList.add('active');
-            event.target.classList.add('active');
-            
-            if (screenName === 'pending') loadPendingPurchases();
-            if (screenName === 'history') loadHistory();
-            if (screenName === 'settings') loadSettings();
-        }
-        
-        // Purchases
-        async function addPurchase(e) {
-            e.preventDefault();
-            
-            const name = document.getElementById('purchase-name').value;
-            const price = parseFloat(document.getElementById('purchase-price').value);
-            const category = document.getElementById('purchase-category').value;
-            const notes = document.getElementById('purchase-notes').value;
-            
-            try {
-                const res = await fetch('/api/purchases', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: currentUser.id,
-                        name, price, category, notes
-                    })
-                });
-                
-                const data = await res.json();
-                showAnalysisModal(data);
-                
-                document.getElementById('add-form').reset();
-                await loadPendingPurchases();
-                
-            } catch (error) {
-                alert('❌ Ошибка добавления покупки');
-                console.error(error);
-            }
-        }
-        
-       // Добавьте/замените функцию showAnalysisModal в index.html
-
-// Добавьте/замените эти функции в <script> секцию index.html
-
-// Показать модальное окно с анализом и выбором
-function showAnalysisModal(data) {
-    const modal = document.getElementById('result-modal');
-    const content = document.getElementById('result-content');
-    const analysis = data.analysis;
-    const purchase = data.purchase;
-    
-    // Определяем, может ли пользователь купить сейчас
-    const canAffordNow = analysis.can_afford;
-    const isLowRisk = analysis.risk_level === 'low';
-    const isMediumRisk = analysis.risk_level === 'medium';
-    const isHighRisk = analysis.risk_level === 'high';
-    const isBlacklisted = analysis.is_blacklisted;
-    
-    // Формируем HTML с финансовым планом
-    let financialPlanHTML = '';
-    
-    if (analysis.savings_plan) {
-        const plan = analysis.savings_plan;
-        financialPlanHTML = `
-            <div style="margin-top:20px;padding:20px;background:#0A0A0A;border-radius:12px;border:2px solid #FFDD2D;">
-                <h3 style="margin-bottom:16px;color:#FFDD2D;font-size:1.1em;">💰 План накопления</h3>
-                
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
-                    <div style="text-align:center;padding:12px;background:#1F1F1F;border-radius:8px;">
-                        <div style="color:#999;font-size:0.85em;margin-bottom:4px;">Не хватает</div>
-                        <div style="font-size:1.4em;font-weight:800;color:#FF3B30;">${plan.shortage.toLocaleString('ru-RU')} ₽</div>
+                </div>
+            `;
+        } else if (!canAffordNow) {
+            actionButtonsHTML = `
+                <div style="margin-top:24px;padding:20px;background:#0A0A0A;border:2px solid #FFDD2D;border-radius:12px;">
+                    <div style="text-align:center;margin-bottom:16px;">
+                        <div style="font-size:48px;margin-bottom:8px;">💰</div>
+                        <h3 style="color:#FFDD2D;margin-bottom:8px;">Недостаточно средств</h3>
+                        <p style="color:#999;font-size:0.9em;">Покупка добавлена в список ожидания</p>
                     </div>
-                    <div style="text-align:center;padding:12px;background:#1F1F1F;border-radius:8px;">
-                        <div style="color:#999;font-size:0.85em;margin-bottom:4px;">Дней накопления</div>
-                        <div style="font-size:1.4em;font-weight:800;color:#FFDD2D;">${plan.days_needed}</div>
+                    <button class="btn btn-primary" onclick="closeModal();showScreen('pending')" style="width:100%;">
+                        📋 Перейти к списку ожидания
+                    </button>
+                </div>
+            `;
+        } else if (isLowRisk) {
+            actionButtonsHTML = `
+                <div style="margin-top:24px;padding:20px;background:rgba(45,211,111,0.1);border:2px solid #2DD36F;border-radius:12px;">
+                    <div style="text-align:center;margin-bottom:16px;">
+                        <div style="font-size:48px;margin-bottom:8px;">🟢</div>
+                        <h3 style="color:#2DD36F;margin-bottom:8px;">Низкий риск покупки</h3>
+                        <p style="color:#999;font-size:0.9em;">У вас достаточно средств, покупка не критична для бюджета</p>
+                    </div>
+                    
+                    <div style="display:grid;gap:12px;">
+                        <button class="btn btn-success" onclick="approvePurchaseNow(${purchase.id})" style="width:100%;">
+                            ✅ Куплю сейчас (без ожидания)
+                        </button>
+                        <button class="btn" style="width:100%;background:#2A2A2A;color:#fff;" onclick="moveToPending(${purchase.id})">
+                            ⏰ Подожду ${analysis.cooling_days} ${analysis.cooling_days === 1 ? 'день' : analysis.cooling_days < 5 ? 'дня' : 'дней'} (рекомендуется)
+                        </button>
+                        <button class="btn btn-danger btn-small" onclick="deletePurchaseFromModal(${purchase.id})" style="width:100%;">
+                            🗑️ Передумал, удалить
+                        </button>
                     </div>
                 </div>
-                
-                <div style="padding:16px;background:#1F1F1F;border-radius:8px;margin-bottom:12px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                        <span style="color:#999;">Откладывать в день:</span>
-                        <span style="font-weight:700;color:#FFDD2D;">${Math.round(plan.daily_savings).toLocaleString('ru-RU')} ₽</span>
+            `;
+        } else if (isMediumRisk) {
+            actionButtonsHTML = `
+                <div style="margin-top:24px;padding:20px;background:rgba(255,221,45,0.1);border:2px solid #FFDD2D;border-radius:12px;">
+                    <div style="text-align:center;margin-bottom:16px;">
+                        <div style="font-size:48px;margin-bottom:8px;">🟡</div>
+                        <h3 style="color:#FFDD2D;margin-bottom:8px;">Средний риск</h3>
+                        <p style="color:#999;font-size:0.9em;">Рекомендуем обдумать эту покупку</p>
                     </div>
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                        <span style="color:#999;">Откладывать в месяц:</span>
-                        <span style="font-weight:700;color:#FFDD2D;">${Math.round(plan.daily_savings * 30).toLocaleString('ru-RU')} ₽</span>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;align-items:center;">
-                        <span style="color:#999;">Можно купить:</span>
-                        <span style="font-weight:700;color:#2DD36F;">${plan.target_date}</span>
+                    
+                    <div style="display:grid;gap:12px;">
+                        <button class="btn btn-primary" onclick="moveToPending(${purchase.id})" style="width:100%;">
+                            ⏰ В список ожидания (${analysis.cooling_days} ${analysis.cooling_days === 1 ? 'день' : analysis.cooling_days < 5 ? 'дня' : 'дней'})
+                        </button>
+                        <button class="btn" style="width:100%;background:#2A2A2A;color:#fff;" onclick="confirmRiskyPurchase(${purchase.id})">
+                            ⚠️ Всё равно куплю сейчас
+                        </button>
+                        <button class="btn btn-danger btn-small" onclick="deletePurchaseFromModal(${purchase.id})" style="width:100%;">
+                            🗑️ Передумал, удалить
+                        </button>
                     </div>
                 </div>
-                
-                ${plan.monthly_impact > 0 ? `
-                    <div style="padding:12px;background:rgba(255,221,45,0.1);border-left:3px solid #FFDD2D;border-radius:4px;">
-                        <div style="font-size:0.9em;color:#FFDD2D;">
-                            💡 Покупка составит ${plan.monthly_impact.toFixed(0)}% от вашего месячного дохода
+            `;
+        } else if (isHighRisk) {
+            actionButtonsHTML = `
+                <div style="margin-top:24px;padding:20px;background:rgba(255,59,48,0.1);border:2px solid #FF3B30;border-radius:12px;">
+                    <div style="text-align:center;margin-bottom:16px;">
+                        <div style="font-size:48px;margin-bottom:8px;">🔴</div>
+                        <h3 style="color:#FF3B30;margin-bottom:8px;">Высокий риск!</h3>
+                        <p style="color:#999;font-size:0.9em;">Эта покупка может серьёзно повлиять на ваш бюджет</p>
+                    </div>
+                    
+                    <div style="display:grid;gap:12px;">
+                        <button class="btn btn-primary" onclick="moveToPending(${purchase.id})" style="width:100%;">
+                            ⏰ В список ожидания (${analysis.cooling_days} ${analysis.cooling_days === 1 ? 'день' : analysis.cooling_days < 5 ? 'дня' : 'дней'})
+                        </button>
+                        <button class="btn btn-danger btn-small" onclick="deletePurchaseFromModal(${purchase.id})" style="width:100%;">
+                            🗑️ Лучше не надо, удалить
+                        </button>
+                    </div>
+                    
+                    <div style="margin-top:12px;padding:12px;background:rgba(255,59,48,0.1);border-left:3px solid #FF3B30;border-radius:4px;">
+                        <div style="font-size:0.85em;color:#FF3B30;">
+                            ⚠️ Покупка сейчас не рекомендуется. Пожалуйста, обдумайте её в период охлаждения.
                         </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        content.innerHTML = `
+            <div class="impulse-meter">
+                <div class="impulse-label">📊 Уровень импульсивности: ${analysis.risk_description}</div>
+                <div class="impulse-bar-container">
+                    <div class="impulse-bar ${analysis.risk_level}" style="width: ${analysis.impulse_score}%">
+                        ${analysis.impulse_score}%
+                    </div>
+                </div>
+                <div style="margin-top:16px;font-size:1.2em;font-weight:700;text-align:center;color:${
+                    analysis.risk_level === 'high' ? '#FF3B30' : 
+                    analysis.risk_level === 'medium' ? '#000' : '#2DD36F'
+                }">
+                    ${analysis.emoji} ${analysis.recommendation}
+                </div>
+                
+                ${analysis.reasons.length > 0 ? `
+                    <div class="impulse-reasons">
+                        <div style="font-weight:600;margin-bottom:10px;">Причины оценки:</div>
+                        ${analysis.reasons.map(r => `<div class="impulse-reason">${r}</div>`).join('')}
                     </div>
                 ` : ''}
-            </div>
-        `;
-    }
-    
-    // Финансовое здоровье
-    let financialHealthHTML = '';
-    if (analysis.financial_health) {
-        const health = analysis.financial_health;
-        const beforeMonths = health.before.savings_months;
-        const afterMonths = health.after.savings_months;
-        
-        financialHealthHTML = `
-            <div style="margin-top:20px;padding:20px;background:#0A0A0A;border-radius:12px;border:2px solid #333;">
-                <h3 style="margin-bottom:16px;color:#fff;font-size:1.1em;">📊 Финансовое состояние</h3>
                 
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-                    <div style="padding:12px;background:#1F1F1F;border-radius:8px;text-align:center;">
-                        <div style="color:#999;font-size:0.85em;margin-bottom:4px;">До покупки</div>
-                        <div style="font-size:1.2em;font-weight:700;color:#2DD36F;">
-                            ${health.before.savings.toLocaleString('ru-RU')} ₽
-                        </div>
-                        <div style="color:#999;font-size:0.8em;margin-top:4px;">
-                            (${beforeMonths.toFixed(1)} мес)
-                        </div>
-                    </div>
-                    <div style="padding:12px;background:#1F1F1F;border-radius:8px;text-align:center;">
-                        <div style="color:#999;font-size:0.85em;margin-bottom:4px;">После покупки</div>
-                        <div style="font-size:1.2em;font-weight:700;color:${afterMonths < 1 ? '#FF3B30' : afterMonths < 3 ? '#FFDD2D' : '#2DD36F'};">
-                            ${health.after.savings.toLocaleString('ru-RU')} ₽
-                        </div>
-                        <div style="color:#999;font-size:0.8em;margin-top:4px;">
-                            (${afterMonths.toFixed(1)} мес)
-                        </div>
-                    </div>
-                </div>
-                
-                ${afterMonths < 1 ? `
-                    <div style="padding:12px;background:rgba(255,59,48,0.1);border-left:3px solid #FF3B30;border-radius:4px;">
-                        <div style="font-size:0.9em;color:#FF3B30;">
-                            ⚠️ После покупки подушка безопасности будет меньше 1 месяца
-                        </div>
-                    </div>
-                ` : afterMonths < 3 ? `
-                    <div style="padding:12px;background:rgba(255,221,45,0.1);border-left:3px solid #FFDD2D;border-radius:4px;">
-                        <div style="font-size:0.9em;color:#FFDD2D;">
-                            💡 Рекомендуется иметь подушку безопасности минимум 3-6 месяцев
-                        </div>
-                    </div>
-                ` : `
-                    <div style="padding:12px;background:rgba(45,211,111,0.1);border-left:3px solid #2DD36F;border-radius:4px;">
-                        <div style="font-size:0.9em;color:#2DD36F;">
-                            ✅ У вас достаточная подушка безопасности
-                        </div>
-                    </div>
-                `}
-            </div>
-        `;
-    }
-    
-    // Финансовые предупреждения
-    let warningsHTML = '';
-    if (analysis.financial_warnings && analysis.financial_warnings.length > 0) {
-        warningsHTML = `
-            <div style="margin-top:16px;padding:16px;background:rgba(255,221,45,0.05);border-radius:8px;border:1px solid rgba(255,221,45,0.2);">
-                <div style="font-weight:600;margin-bottom:10px;color:#FFDD2D;">⚠️ Финансовые риски:</div>
-                ${analysis.financial_warnings.map(w => `
-                    <div style="padding:8px;margin-bottom:6px;background:#1F1F1F;border-radius:6px;font-size:0.9em;">
-                        ${w}
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    }
-    
-    // ===== КНОПКИ ДЕЙСТВИЙ В ЗАВИСИМОСТИ ОТ СИТУАЦИИ =====
-    
-    let actionButtonsHTML = '';
-    
-    if (isBlacklisted) {
-        // Категория в чёрном списке - только удалить
-        actionButtonsHTML = `
-            <div style="margin-top:24px;padding:20px;background:rgba(255,59,48,0.1);border:2px solid #FF3B30;border-radius:12px;">
-                <div style="text-align:center;margin-bottom:16px;">
-                    <div style="font-size:48px;margin-bottom:8px;">🚫</div>
-                    <h3 style="color:#FF3B30;margin-bottom:8px;">Покупка запрещена</h3>
-                    <p style="color:#999;font-size:0.9em;">Вы добавили эту категорию в чёрный список</p>
-                </div>
-                <button class="btn btn-danger" onclick="deletePurchaseFromModal(${purchase.id})" style="width:100%;">
-                    🗑️ Удалить из списка
-                </button>
-            </div>
-        `;
-    } else if (!canAffordNow) {
-        // Недостаточно средств - только в ожидание
-        actionButtonsHTML = `
-            <div style="margin-top:24px;padding:20px;background:#0A0A0A;border:2px solid #FFDD2D;border-radius:12px;">
-                <div style="text-align:center;margin-bottom:16px;">
-                    <div style="font-size:48px;margin-bottom:8px;">💰</div>
-                    <h3 style="color:#FFDD2D;margin-bottom:8px;">Недостаточно средств</h3>
-                    <p style="color:#999;font-size:0.9em;">Покупка добавлена в список ожидания</p>
-                </div>
-                <button class="btn btn-primary" onclick="closeModal();showScreen('pending')" style="width:100%;">
-                    📋 Перейти к списку ожидания
-                </button>
-            </div>
-        `;
-    } else if (isLowRisk) {
-        // Низкий риск - выбор: купить сейчас или в ожидание
-        actionButtonsHTML = `
-            <div style="margin-top:24px;padding:20px;background:rgba(45,211,111,0.1);border:2px solid #2DD36F;border-radius:12px;">
-                <div style="text-align:center;margin-bottom:16px;">
-                    <div style="font-size:48px;margin-bottom:8px;">🟢</div>
-                    <h3 style="color:#2DD36F;margin-bottom:8px;">Низкий риск покупки</h3>
-                    <p style="color:#999;font-size:0.9em;">У вас достаточно средств, покупка не критична для бюджета</p>
-                </div>
-                
-                <div style="display:grid;gap:12px;">
-                    <button class="btn btn-success" onclick="approvePurchaseNow(${purchase.id})" style="width:100%;">
-                        ✅ Куплю сейчас (без ожидания)
-                    </button>
-                    <button class="btn" style="width:100%;background:#2A2A2A;color:#fff;" onclick="moveToPending(${purchase.id})">
-                        ⏰ Подожду ${analysis.cooling_days} ${analysis.cooling_days === 1 ? 'день' : analysis.cooling_days < 5 ? 'дня' : 'дней'} (рекомендуется)
-                    </button>
-                    <button class="btn btn-danger btn-small" onclick="deletePurchaseFromModal(${purchase.id})" style="width:100%;">
-                        🗑️ Передумал, удалить
-                    </button>
-                </div>
-            </div>
-        `;
-    } else if (isMediumRisk) {
-        // Средний риск - выбор с предупреждением
-        actionButtonsHTML = `
-            <div style="margin-top:24px;padding:20px;background:rgba(255,221,45,0.1);border:2px solid #FFDD2D;border-radius:12px;">
-                <div style="text-align:center;margin-bottom:16px;">
-                    <div style="font-size:48px;margin-bottom:8px;">🟡</div>
-                    <h3 style="color:#FFDD2D;margin-bottom:8px;">Средний риск</h3>
-                    <p style="color:#999;font-size:0.9em;">Рекомендуем обдумать эту покупку</p>
-                </div>
-                
-                <div style="display:grid;gap:12px;">
-                    <button class="btn btn-primary" onclick="moveToPending(${purchase.id})" style="width:100%;">
-                        ⏰ В список ожидания (${analysis.cooling_days} ${analysis.cooling_days === 1 ? 'день' : analysis.cooling_days < 5 ? 'дня' : 'дней'})
-                    </button>
-                    <button class="btn" style="width:100%;background:#2A2A2A;color:#fff;" onclick="confirmRiskyPurchase(${purchase.id})">
-                        ⚠️ Всё равно куплю сейчас
-                    </button>
-                    <button class="btn btn-danger btn-small" onclick="deletePurchaseFromModal(${purchase.id})" style="width:100%;">
-                        🗑️ Передумал, удалить
-                    </button>
-                </div>
-            </div>
-        `;
-    } else if (isHighRisk) {
-        // Высокий риск - только в ожидание или удалить
-        actionButtonsHTML = `
-            <div style="margin-top:24px;padding:20px;background:rgba(255,59,48,0.1);border:2px solid #FF3B30;border-radius:12px;">
-                <div style="text-align:center;margin-bottom:16px;">
-                    <div style="font-size:48px;margin-bottom:8px;">🔴</div>
-                    <h3 style="color:#FF3B30;margin-bottom:8px;">Высокий риск!</h3>
-                    <p style="color:#999;font-size:0.9em;">Эта покупка может серьёзно повлиять на ваш бюджет</p>
-                </div>
-                
-                <div style="display:grid;gap:12px;">
-                    <button class="btn btn-primary" onclick="moveToPending(${purchase.id})" style="width:100%;">
-                        ⏰ В список ожидания (${analysis.cooling_days} ${analysis.cooling_days === 1 ? 'день' : analysis.cooling_days < 5 ? 'дня' : 'дней'})
-                    </button>
-                    <button class="btn btn-danger btn-small" onclick="deletePurchaseFromModal(${purchase.id})" style="width:100%;">
-                        🗑️ Лучше не надо, удалить
-                    </button>
-                </div>
-                
-                <div style="margin-top:12px;padding:12px;background:rgba(255,59,48,0.1);border-left:3px solid #FF3B30;border-radius:4px;">
-                    <div style="font-size:0.85em;color:#FF3B30;">
-                        ⚠️ Покупка сейчас не рекомендуется. Пожалуйста, обдумайте её в период охлаждения.
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    content.innerHTML = `
-        <div class="impulse-meter">
-            <div class="impulse-label">📊 Уровень импульсивности: ${analysis.risk_description}</div>
-            <div class="impulse-bar-container">
-                <div class="impulse-bar ${analysis.risk_level}" style="width: ${analysis.impulse_score}%">
-                    ${analysis.impulse_score}%
-                </div>
-            </div>
-            <div style="margin-top:16px;font-size:1.2em;font-weight:700;text-align:center;color:${
-                analysis.risk_level === 'high' ? '#FF3B30' : 
-                analysis.risk_level === 'medium' ? '#000' : '#2DD36F'
-            }">
-                ${analysis.emoji} ${analysis.recommendation}
+                ${warningsHTML}
             </div>
             
-            ${analysis.reasons.length > 0 ? `
-                <div class="impulse-reasons">
-                    <div style="font-weight:600;margin-bottom:10px;">Причины оценки:</div>
-                    ${analysis.reasons.map(r => `<div class="impulse-reason">${r}</div>`).join('')}
-                </div>
-            ` : ''}
-            
-            ${warningsHTML}
-        </div>
-        
-        ${financialPlanHTML}
-        ${financialHealthHTML}
-        ${actionButtonsHTML}
-    `;
-    
-    modal.classList.add('active');
-}
-
-// Купить сейчас (для низкого риска)
-async function approvePurchaseNow(purchaseId) {
-    try {
-        const res = await fetch(`/api/purchases/${purchaseId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'approved' })
-        });
-        
-        if (res.ok) {
-            closeModal();
-            alert('✅ Покупка одобрена! Приятного использования 🎉');
-            await loadPendingPurchases();
-            await loadStatistics();
-            showScreen('history');
-        } else {
-            alert('❌ Ошибка одобрения покупки');
-        }
-    } catch (error) {
-        alert('❌ Ошибка: ' + error.message);
-        console.error(error);
-    }
-}
-
-// Переместить в ожидание
-async function moveToPending(purchaseId) {
-    closeModal();
-    alert('📋 Покупка добавлена в список ожидания');
-    await loadPendingPurchases();
-    showScreen('pending');
-}
-
-// Подтверждение рискованной покупки
-async function confirmRiskyPurchase(purchaseId) {
-    const confirmed = confirm(
-        '⚠️ Вы уверены?\n\n' +
-        'Эта покупка имеет средний/высокий уровень риска и может негативно повлиять на ваш бюджет.\n\n' +
-        'Рекомендуем добавить её в список ожидания и обдумать в период охлаждения.\n\n' +
-        'Всё равно купить сейчас?'
-    );
-    
-    if (confirmed) {
-        await approvePurchaseNow(purchaseId);
-    }
-}
-
-// Удалить покупку из модального окна
-async function deletePurchaseFromModal(purchaseId) {
-    const confirmed = confirm('Удалить эту покупку?');
-    if (!confirmed) return;
-    
-    try {
-        const res = await fetch(`/api/purchases/${purchaseId}`, {
-            method: 'DELETE'
-        });
-        
-        if (res.ok) {
-            closeModal();
-            alert('🗑️ Покупка удалена');
-            await loadPendingPurchases();
-            await loadStatistics();
-        } else {
-            alert('❌ Ошибка удаления');
-        }
-    } catch (error) {
-        alert('❌ Ошибка: ' + error.message);
-        console.error(error);
-    }
-}
-
-    // Также обновите отображение в pending-list для показа финансового плана
-    function formatPurchaseItem(p) {
-        const endDate = new Date(p.cooling_end_date);
-        const now = new Date();
-        const daysLeft = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
-        const canDecide = daysLeft <= 0;
-        
-        let statusBadge = '';
-        if (p.is_blacklisted) {
-            statusBadge = '<span class="badge badge-danger">🚫 В чёрном списке</span>';
-        } else if (canDecide) {
-            statusBadge = '<span class="badge badge-success">✅ Можно решить</span>';
-        } else {
-            statusBadge = `<span class="badge badge-warning">⏳ Осталось ${daysLeft} ${daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'}</span>`;
-        }
-        
-        return `
-            <div class="purchase-item ${p.is_blacklisted ? 'blacklisted' : p.status === 'approved' ? 'approved' : p.status === 'rejected' ? 'rejected' : ''}">
-                <div class="purchase-header">
-                    <div class="purchase-name">${p.name}</div>
-                    <div class="purchase-price">${p.price.toLocaleString('ru-RU')} ₽</div>
-                </div>
-                <div class="purchase-meta">
-                    <span>📦 ${p.category}</span>
-                    <span>⏱️ ${p.cooling_period_days} дн</span>
-                    <span>📅 ${endDate.toLocaleDateString('ru-RU')}</span>
-                </div>
-                ${statusBadge}
-                ${p.notes ? `<div style="margin-top:8px;padding:12px;background:#0A0A0A;border-radius:8px;font-size:0.9em;color:#999;">💭 ${p.notes}</div>` : ''}
-                ${p.product_url ? `<a href="${p.product_url}" target="_blank" style="color:#FFDD2D;margin-top:8px;display:inline-block;font-size:0.9em;">🔗 Ссылка на товар</a>` : ''}
-                <div class="purchase-actions">
-                    ${canDecide && !p.is_blacklisted ? `
-                        <button class="btn btn-success" onclick="updatePurchase(${p.id}, 'approved')">✅ Куплю</button>
-                        <button class="btn btn-danger" onclick="updatePurchase(${p.id}, 'rejected')">❌ Откажусь</button>
-                    ` : p.is_blacklisted ? `
-                        <button class="btn btn-danger" onclick="updatePurchase(${p.id}, 'rejected')">❌ Удалить</button>
-                    ` : `
-                        <button class="btn btn-secondary" disabled>⏳ Ждите ${daysLeft} ${daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'}</button>
-                    `}
-                    <button class="btn btn-danger btn-small" onclick="deletePurchase(${p.id})">🗑️</button>
-                </div>
-            </div>
+            ${financialPlanHTML}
+            ${financialHealthHTML}
+            ${actionButtonsHTML}
         `;
+        
+        modal.classList.add('active');
     }
-        
-        async function loadPendingPurchases() {
-            const container = document.getElementById('pending-list');
-            container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Загрузка...</p></div>';
+
+    async function approvePurchaseNow(purchaseId) {
+        try {
+            const res = await fetch(`/api/purchases/${purchaseId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'approved' })
+            });
             
-            try {
-                const res = await fetch(`/api/purchases?user_id=${currentUser.id}&status=pending`);
-                const purchases = await res.json();
-                
-                if (purchases.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon">📋</div>
-                            <h3>Нет ожидающих покупок</h3>
-                            <p>Добавьте товар для анализа</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                container.innerHTML = purchases.map(p => {
-                    const endDate = new Date(p.cooling_end_date);
-                    const now = new Date();
-                    const daysLeft = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
-                    const canDecide = daysLeft <= 0;
-                    
-                    return `
-                        <div class="purchase-item ${p.is_blacklisted ? 'blacklisted' : ''}">
-                            <div class="purchase-header">
-                                <div class="purchase-name">${p.name}</div>
-                                <div class="purchase-price">${p.price.toLocaleString('ru-RU')} ₽</div>
-                            </div>
-                            <div class="purchase-meta">
-                                <span>📦 ${p.category}</span>
-                                <span>⏱️ ${p.cooling_period_days} дн</span>
-                                <span>📅 ${endDate.toLocaleDateString('ru-RU')}</span>
-                            </div>
-                            ${p.is_blacklisted ? 
-                                '<span class="badge badge-danger">🚫 В чёрном списке</span>' :
-                                canDecide ?
-                                    '<span class="badge badge-success">✅ Можно решить</span>' :
-                                    `<span class="badge badge-warning">⏳ Осталось ${daysLeft} дн</span>`
-                            }
-                            ${p.notes ? `<div style="margin-top:8px;padding:12px;background:#0A0A0A;border-radius:8px;font-size:0.9em;color:#999;">💭 ${p.notes}</div>` : ''}
-                            ${p.product_url ? `<a href="${p.product_url}" target="_blank" style="color:#FFDD2D;margin-top:8px;display:inline-block;font-size:0.9em;">🔗 Ссылка на товар</a>` : ''}
-                            <div class="purchase-actions">
-                                ${canDecide && !p.is_blacklisted ? `
-                                    <button class="btn btn-success" onclick="updatePurchase(${p.id}, 'approved')">✅ Куплю</button>
-                                    <button class="btn btn-danger" onclick="updatePurchase(${p.id}, 'rejected')">❌ Откажусь</button>
-                                ` : p.is_blacklisted ? `
-                                    <button class="btn btn-danger" onclick="updatePurchase(${p.id}, 'rejected')">❌ Удалить</button>
-                                ` : `
-                                    <button class="btn btn-secondary" disabled>⏳ Ждите ${daysLeft} дн</button>
-                                `}
-                                <button class="btn btn-danger btn-small" onclick="deletePurchase(${p.id})">🗑️</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            } catch (error) {
-                container.innerHTML = '<div style="color:#FF3B30;text-align:center;padding:40px;">❌ Ошибка загрузки</div>';
-                console.error(error);
-            }
-        }
-        
-        async function updatePurchase(id, status) {
-            try {
-                await fetch(`/api/purchases/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status })
-                });
+            if (res.ok) {
+                closeModal();
+                alert('✅ Покупка одобрена! Приятного использования 🎉');
                 await loadPendingPurchases();
                 await loadStatistics();
-            } catch (error) {
-                alert('❌ Ошибка обновления');
-                console.error(error);
+                showScreen('history');
+            } else {
+                alert('❌ Ошибка одобрения покупки');
             }
+        } catch (error) {
+            alert('❌ Ошибка: ' + error.message);
+            console.error(error);
         }
+    }
+
+    async function moveToPending(purchaseId) {
+        closeModal();
+        alert('📋 Покупка добавлена в список ожидания');
+        await loadPendingPurchases();
+        showScreen('pending');
+    }
+
+    async function confirmRiskyPurchase(purchaseId) {
+        const confirmed = confirm(
+            '⚠️ Вы уверены?\n\n' +
+            'Эта покупка имеет средний/высокий уровень риска и может негативно повлиять на ваш бюджет.\n\n' +
+            'Рекомендуем добавить её в список ожидания и обдумать в период охлаждения.\n\n' +
+            'Всё равно купить сейчас?'
+        );
         
-        async function deletePurchase(id) {
-            if (!confirm('Удалить эту покупку?')) return;
-            try {
-                await fetch(`/api/purchases/${id}`, { method: 'DELETE' });
+        if (confirmed) {
+            await approvePurchaseNow(purchaseId);
+        }
+    }
+
+    async function deletePurchaseFromModal(purchaseId) {
+        const confirmed = confirm('Удалить эту покупку?');
+        if (!confirmed) return;
+        
+        try {
+            const res = await fetch(`/api/purchases/${purchaseId}`, {
+                method: 'DELETE'
+            });
+            
+            if (res.ok) {
+                closeModal();
+                alert('🗑️ Покупка удалена');
                 await loadPendingPurchases();
                 await loadStatistics();
-            } catch (error) {
+            } else {
                 alert('❌ Ошибка удаления');
-                console.error(error);
             }
+        } catch (error) {
+            alert('❌ Ошибка: ' + error.message);
+            console.error(error);
         }
+    }
+    
+    async function loadPendingPurchases() {
+        const container = document.getElementById('pending-list');
+        container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Загрузка...</p></div>';
         
-        async function loadHistory() {
-            await loadStatistics();
-            const container = document.getElementById('history-list');
-            container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+        try {
+            const res = await fetch(`/api/purchases?user_id=${currentUser.id}&status=pending`);
+            const purchases = await res.json();
             
-            try {
-                const res = await fetch(`/api/purchases?user_id=${currentUser.id}`);
-                const allPurchases = await res.json();
-                const purchases = allPurchases.filter(p => p.status !== 'pending');
+            if (purchases.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📋</div>
+                        <h3>Нет ожидающих покупок</h3>
+                        <p>Добавьте товар для анализа</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = purchases.map(p => {
+                const endDate = new Date(p.cooling_end_date);
+                const now = new Date();
+                const daysLeft = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+                const canDecide = daysLeft <= 0;
                 
-                if (purchases.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon">📊</div>
-                            <p>Нет записей в истории</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                container.innerHTML = purchases.map(p => `
-                    <div class="purchase-item ${p.status === 'approved' ? 'approved' : 'rejected'}">
+                return `
+                    <div class="purchase-item ${p.is_blacklisted ? 'blacklisted' : ''}">
                         <div class="purchase-header">
                             <div class="purchase-name">${p.name}</div>
                             <div class="purchase-price">${p.price.toLocaleString('ru-RU')} ₽</div>
                         </div>
                         <div class="purchase-meta">
                             <span>📦 ${p.category}</span>
-                            <span>📅 ${new Date(p.created_at).toLocaleDateString('ru-RU')}</span>
+                            <span>⏱️ ${p.cooling_period_days} дн</span>
+                            <span>📅 ${endDate.toLocaleDateString('ru-RU')}</span>
                         </div>
-                        <span class="badge ${p.status === 'approved' ? 'badge-success' : 'badge-danger'}">
-                            ${p.status === 'approved' ? '✅ Куплено' : '❌ Отказано'}
-                        </span>
-                    </div>
-                `).join('');
-            } catch (error) {
-                container.innerHTML = '<div style="color:#FF3B30;padding:20px;">❌ Ошибка</div>';
-                console.error(error);
-            }
-        }
-        
-        async function loadStatistics() {
-            try {
-                const res = await fetch(`/api/statistics/${currentUser.id}`);
-                const stats = await res.json();
-                
-                document.getElementById('stats-grid').innerHTML = `
-                    <div class="stat-card">
-                        <div class="stat-label">📊 Всего покупок</div>
-                        <div class="stat-value">${stats.total}</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">⏳ Ожидают решения</div>
-                        <div class="stat-value">${stats.pending}</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">💸 Потрачено</div>
-                        <div class="stat-value">${Math.round(stats.total_spent).toLocaleString('ru-RU')} ₽</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">💰 Сэкономлено</div>
-                        <div class="stat-value" style="color:#2DD36F;">${Math.round(stats.total_saved).toLocaleString('ru-RU')} ₽</div>
+                        ${p.is_blacklisted ? 
+                            '<span class="badge badge-danger">🚫 В чёрном списке</span>' :
+                            canDecide ?
+                                '<span class="badge badge-success">✅ Можно решить</span>' :
+                                `<span class="badge badge-warning">⏳ Осталось ${daysLeft} дн</span>`
+                        }
+                        ${p.notes ? `<div style="margin-top:8px;padding:12px;background:#0A0A0A;border-radius:8px;font-size:0.9em;color:#999;">💭 ${p.notes}</div>` : ''}
+                        ${p.product_url ? `<a href="${p.product_url}" target="_blank" style="color:#FFDD2D;margin-top:8px;display:inline-block;font-size:0.9em;">🔗 Ссылка на товар</a>` : ''}
+                        <div class="purchase-actions">
+                            ${canDecide && !p.is_blacklisted ? `
+                                <button class="btn btn-success" onclick="updatePurchase(${p.id}, 'approved')">✅ Куплю</button>
+                                <button class="btn btn-danger" onclick="updatePurchase(${p.id}, 'rejected')">❌ Откажусь</button>
+                            ` : p.is_blacklisted ? `
+                                <button class="btn btn-danger" onclick="updatePurchase(${p.id}, 'rejected')">❌ Удалить</button>
+                            ` : `
+                                <button class="btn btn-secondary" disabled>⏳ Ждите ${daysLeft} дн</button>
+                            `}
+                            <button class="btn btn-danger btn-small" onclick="deletePurchase(${p.id})">🗑️</button>
+                        </div>
                     </div>
                 `;
-            } catch (error) {
-                console.error('Ошибка загрузки статистики', error);
+            }).join('');
+        } catch (error) {
+            container.innerHTML = '<div style="color:#FF3B30;text-align:center;padding:40px;">❌ Ошибка загрузки</div>';
+            console.error(error);
+        }
+    }
+    
+    async function updatePurchase(id, status) {
+        try {
+            await fetch(`/api/purchases/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+            await loadPendingPurchases();
+            await loadStatistics();
+        } catch (error) {
+            alert('❌ Ошибка обновления');
+            console.error(error);
+        }
+    }
+    
+    async function deletePurchase(id) {
+        if (!confirm('Удалить эту покупку?')) return;
+        try {
+            await fetch(`/api/purchases/${id}`, { method: 'DELETE' });
+            await loadPendingPurchases();
+            await loadStatistics();
+        } catch (error) {
+            alert('❌ Ошибка удаления');
+            console.error(error);
+        }
+    }
+    
+    async function loadHistory() {
+        await loadStatistics();
+        const container = document.getElementById('history-list');
+        container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+        
+        try {
+            const res = await fetch(`/api/purchases?user_id=${currentUser.id}`);
+            const allPurchases = await res.json();
+            const purchases = allPurchases.filter(p => p.status !== 'pending');
+            
+            if (purchases.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📊</div>
+                        <p>Нет записей в истории</p>
+                    </div>
+                `;
+                return;
             }
+            
+            container.innerHTML = purchases.map(p => `
+                <div class="purchase-item ${p.status === 'approved' ? 'approved' : 'rejected'}">
+                    <div class="purchase-header">
+                        <div class="purchase-name">${p.name}</div>
+                        <div class="purchase-price">${p.price.toLocaleString('ru-RU')} ₽</div>
+                    </div>
+                    <div class="purchase-meta">
+                        <span>📦 ${p.category}</span>
+                        <span>📅 ${new Date(p.created_at).toLocaleDateString('ru-RU')}</span>
+                    </div>
+                    <span class="badge ${p.status === 'approved' ? 'badge-success' : 'badge-danger'}">
+                        ${p.status === 'approved' ? '✅ Куплено' : '❌ Отказано'}
+                    </span>
+                </div>
+            `).join('');
+        } catch (error) {
+            container.innerHTML = '<div style="color:#FF3B30;padding:20px;">❌ Ошибка</div>';
+            console.error(error);
+        }
+    }
+    
+    async function loadStatistics() {
+        try {
+            const res = await fetch(`/api/statistics/${currentUser.id}`);
+            const stats = await res.json();
+            
+            document.getElementById('stats-grid').innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-label">📊 Всего покупок</div>
+                    <div class="stat-value">${stats.total}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">⏳ Ожидают решения</div>
+                    <div class="stat-value">${stats.pending}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">💸 Потрачено</div>
+                    <div class="stat-value">${Math.round(stats.total_spent).toLocaleString('ru-RU')} ₽</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">💰 Сэкономлено</div>
+                    <div class="stat-value" style="color:#2DD36F;">${Math.round(stats.total_saved).toLocaleString('ru-RU')} ₽</div>
+                </div>
+            `;
+        } catch (error) {
+            console.error('Ошибка загрузки статистики', error);
+        }
+    }
+    
+    async function loadSettings() {
+        await refreshCurrentUser();
+        
+        document.getElementById('profile-salary').value = currentUser.salary;
+        document.getElementById('profile-savings').value = currentUser.monthly_savings;
+        document.getElementById('profile-current').value = currentUser.current_savings;
+        
+        try {
+            const res = await fetch(`/api/price-ranges/${currentUser.id}`);
+            const ranges = await res.json();
+            
+            document.getElementById('price-ranges-list').innerHTML = ranges.map(r => `
+                <div class="range-item">
+                    <div class="range-info">
+                        <strong>${r.min_price.toLocaleString('ru-RU')} ₽</strong> - 
+                        <strong>${r.max_price ? r.max_price.toLocaleString('ru-RU') + ' ₽' : '∞'}</strong>
+                        → <span style="color:#FFDD2D;">${r.cooling_days} дней</span>
+                    </div>
+                    <button class="btn btn-danger btn-small" onclick="deletePriceRange(${r.id})">🗑️</button>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Ошибка загрузки диапазонов', error);
         }
         
-        async function loadSettings() {
-            // Load profile
-            document.getElementById('profile-salary').value = currentUser.salary;
-            document.getElementById('profile-savings').value = currentUser.monthly_savings;
-            document.getElementById('profile-current').value = currentUser.current_savings;
+        try {
+            const res = await fetch(`/api/blacklist/${currentUser.id}`);
+            const blacklist = await res.json();
             
-            // Load price ranges
-            try {
-                const res = await fetch(`/api/price-ranges/${currentUser.id}`);
-                const ranges = await res.json();
-                
-                document.getElementById('price-ranges-list').innerHTML = ranges.map(r => `
-                    <div class="range-item">
-                        <div class="range-info">
-                            <strong>${r.min_price.toLocaleString('ru-RU')} ₽</strong> - 
-                            <strong>${r.max_price ? r.max_price.toLocaleString('ru-RU') + ' ₽' : '∞'}</strong>
-                            → <span style="color:#FFDD2D;">${r.cooling_days} дней</span>
-                        </div>
-                        <button class="btn btn-danger btn-small" onclick="deletePriceRange(${r.id})">🗑️</button>
+            if (blacklist.length === 0) {
+                document.getElementById('blacklist-list').innerHTML = '<p style="color:#999;text-align:center;padding:20px;">Нет запрещённых категорий</p>';
+            } else {
+                document.getElementById('blacklist-list').innerHTML = blacklist.map(b => `
+                    <div class="blacklist-item">
+                        <span>🚫 ${b.category}</span>
+                        <button class="btn btn-danger btn-small" onclick="removeBlacklist(${b.id})">Удалить</button>
                     </div>
                 `).join('');
-            } catch (error) {
-                console.error('Ошибка загрузки диапазонов', error);
             }
-            
-            // Load blacklist
-            try {
-                const res = await fetch(`/api/blacklist/${currentUser.id}`);
-                const blacklist = await res.json();
-                
-                if (blacklist.length === 0) {
-                    document.getElementById('blacklist-list').innerHTML = '<p style="color:#999;text-align:center;padding:20px;">Нет запрещённых категорий</p>';
-                } else {
-                    document.getElementById('blacklist-list').innerHTML = blacklist.map(b => `
-                        <div class="blacklist-item">
-                            <span>🚫 ${b.category}</span>
-                            <button class="btn btn-danger btn-small" onclick="removeBlacklist(${b.id})">Удалить</button>
-                        </div>
-                    `).join('');
-                }
-            } catch (error) {
-                console.error('Ошибка загрузки blacklist', error);
-            }
-        }
-
-        async function loadTelegramStatus() {
-            const statusIcon = document.getElementById('tg-status-icon');
-            const statusText = document.getElementById('tg-status-text');
-            
-            if (currentUser.telegram_linked) {
-                statusIcon.textContent = '✅';
-                statusText.textContent = 'Подключен';
-                statusText.style.color = '#2DD36F';
-                document.getElementById('tg-instructions').style.display = 'none';
-            } else {
-                statusIcon.textContent = '❌';
-                statusText.textContent = 'Не подключен';
-                statusText.style.color = '#FF3B30';
-                document.getElementById('user-nick').textContent = currentUser.nickname;
-            }
-        }
-
-        function toggleTgInstructions() {
-            const instructions = document.getElementById('tg-instructions');
-            instructions.style.display = instructions.style.display === 'none' ? 'block' : 'none';
-        }
-
-        // Вызывай в loadSettings():
-        async function loadSettings() {
-            // ... существующий код ...
-            
-            loadTelegramStatus(); // ДОБАВЬ ЭТУ СТРОКУ
+        } catch (error) {
+            console.error('Ошибка загрузки blacklist', error);
         }
         
-        async function updateProfile(e) {
-            e.preventDefault();
-            try {
-                await fetch(`/api/users/${currentUser.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        salary: parseFloat(document.getElementById('profile-salary').value),
-                        monthly_savings: parseFloat(document.getElementById('profile-savings').value),
-                        current_savings: parseFloat(document.getElementById('profile-current').value)
-                    })
-                });
-                
-                // Update local user object
-                currentUser.salary = parseFloat(document.getElementById('profile-salary').value);
-                currentUser.monthly_savings = parseFloat(document.getElementById('profile-savings').value);
-                currentUser.current_savings = parseFloat(document.getElementById('profile-current').value);
-                
+        loadTelegramStatus();
+    }
+
+    async function loadTelegramStatus() {
+        const statusIcon = document.getElementById('tg-status-icon');
+        const statusText = document.getElementById('tg-status-text');
+        
+        if (currentUser.telegram_linked) {
+            statusIcon.textContent = '✅';
+            statusText.textContent = 'Подключен';
+            statusText.style.color = '#2DD36F';
+            document.getElementById('tg-instructions').style.display = 'none';
+        } else {
+            statusIcon.textContent = '❌';
+            statusText.textContent = 'Не подключен';
+            statusText.style.color = '#FF3B30';
+            document.getElementById('user-nick').textContent = currentUser.nickname;
+        }
+    }
+
+    function toggleTgInstructions() {
+        const instructions = document.getElementById('tg-instructions');
+        instructions.style.display = instructions.style.display === 'none' ? 'block' : 'none';
+    }
+    
+    async function updateProfile(e) {
+        e.preventDefault();
+        try {
+            const newSalary = parseFloat(document.getElementById('profile-salary').value);
+            const newMonthlySavings = parseFloat(document.getElementById('profile-savings').value);
+            const newCurrentSavings = parseFloat(document.getElementById('profile-current').value);
+            
+            const res = await fetch(`/api/users/${currentUser.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    salary: newSalary,
+                    monthly_savings: newMonthlySavings,
+                    current_savings: newCurrentSavings
+                })
+            });
+            
+            if (res.ok) {
+                await refreshCurrentUser();
                 alert('✅ Профиль обновлён!');
-            } catch (error) {
-                alert('❌ Ошибка обновления');
-                console.error(error);
-            }
-        }
-        
-        async function addPriceRange(e) {
-            e.preventDefault();
-            const min = parseFloat(document.getElementById('range-min').value);
-            const max = document.getElementById('range-max').value ? parseFloat(document.getElementById('range-max').value) : null;
-            const days = parseInt(document.getElementById('range-days').value);
-            
-            try {
-                await fetch('/api/price-ranges', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: currentUser.id,
-                        min_price: min,
-                        max_price: max,
-                        cooling_days: days
-                    })
+                console.log('💰 Новые данные профиля:', {
+                    salary: currentUser.salary,
+                    monthly_savings: currentUser.monthly_savings,
+                    current_savings: currentUser.current_savings
                 });
-                
+            } else {
+                alert('❌ Ошибка обновления профиля');
+            }
+        } catch (error) {
+            alert('❌ Ошибка обновления');
+            console.error(error);
+        }
+    }
+    
+    async function addPriceRange(e) {
+        e.preventDefault();
+        const min = parseFloat(document.getElementById('range-min').value);
+        const max = document.getElementById('range-max').value ? parseFloat(document.getElementById('range-max').value) : null;
+        const days = parseInt(document.getElementById('range-days').value);
+        
+        try {
+            const res = await fetch('/api/price-ranges', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: currentUser.id,
+                    min_price: min,
+                    max_price: max,
+                    cooling_days: days
+                })
+            });
+            
+            if (res.ok) {
                 document.getElementById('add-range-form').reset();
-                loadSettings();
-            } catch (error) {
+                await loadSettings();
+                console.log('✅ Диапазон добавлен');
+            } else {
                 alert('❌ Ошибка добавления диапазона');
-                console.error(error);
             }
+        } catch (error) {
+            alert('❌ Ошибка добавления диапазона');
+            console.error(error);
         }
-        
-        async function deletePriceRange(id) {
-            if (!confirm('Удалить этот диапазон?')) return;
-            try {
-                await fetch(`/api/price-ranges/${id}`, { method: 'DELETE' });
-                loadSettings();
-            } catch (error) {
-                alert('❌ Ошибка удаления');
-                console.error(error);
+    }
+    
+    async function deletePriceRange(id) {
+        if (!confirm('Удалить этот диапазон?')) return;
+        try {
+            const res = await fetch(`/api/price-ranges/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                await loadSettings();
+                console.log('✅ Диапазон удалён');
             }
+        } catch (error) {
+            alert('❌ Ошибка удаления');
+            console.error(error);
         }
+    }
+    
+    async function addBlacklist(e) {
+        e.preventDefault();
+        const category = document.getElementById('blacklist-category').value;
         
-        async function addBlacklist(e) {
-            e.preventDefault();
-            const category = document.getElementById('blacklist-category').value;
+        try {
+            const res = await fetch('/api/blacklist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: currentUser.id,
+                    category: category
+                })
+            });
             
-            try {
-                await fetch('/api/blacklist', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: currentUser.id,
-                        category: category
-                    })
-                });
-                
+            if (res.ok) {
                 document.getElementById('add-blacklist-form').reset();
-                loadSettings();
-            } catch (error) {
-                alert('❌ Ошибка добавления категории');
-                console.error(error);
+                await loadSettings();
+                console.log('✅ Категория добавлена в чёрный список:', category);
+            } else {
+                const error = await res.json();
+                alert('❌ ' + error.error);
             }
+        } catch (error) {
+            alert('❌ Ошибка добавления категории');
+            console.error(error);
         }
-        
-        async function removeBlacklist(id) {
-            try {
-                await fetch(`/api/blacklist/${id}`, { method: 'DELETE' });
-                loadSettings();
-            } catch (error) {
-                alert('❌ Ошибка удаления');
-                console.error(error);
+    }
+    
+    async function removeBlacklist(id) {
+        try {
+            const res = await fetch(`/api/blacklist/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                await loadSettings();
+                console.log('✅ Категория удалена из чёрного списка');
             }
+        } catch (error) {
+            alert('❌ Ошибка удаления');
+            console.error(error);
         }
-        
-        function closeModal() {
-            document.getElementById('result-modal').classList.remove('active');
-        }
-    </script>
+    }
+    
+    function closeModal() {
+        document.getElementById('result-modal').classList.remove('active');
+    }
+</script>
 </body>
 </html>
