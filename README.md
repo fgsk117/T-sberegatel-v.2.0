@@ -26,6 +26,22 @@
 *    Линтинг: ESLint + TypeScript-ESLint
 *    Fast Refresh + HMR для быстрого развития
 
+## Web-реализация
+
+### Запуск
+
+pip install -r requirement.txt
+
+python app.py
+
+## Client-реализция
+
+### Запуск
+
+pip install -r requirement.txt
+
+python app.py
+
 ## Android-реализация
 
 Использование Vite-приложения как мобильного UI
@@ -63,14 +79,6 @@ npx cap sync
 ### Откройте проект в Android Studio
 
 npx cap open android
-
-## Web-реализация
-
-### Запуск
-
-pip install -r requirement.txt
-
-python app.py
 
 ## Ссылки
 Сайт-визитка: https://т-сберегатель.рф
