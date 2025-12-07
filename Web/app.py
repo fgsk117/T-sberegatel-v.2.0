@@ -1,9 +1,15 @@
 from flask import Flask, render_template, send_file
 from flask_cors import CORS
 import os
+import asyncio
+import threading
 
 from models import db
 from routes import api
+from telegram_bot import init_telegram_bot
+
+# ===== ГЛОБАЛЬНАЯ ПЕРЕМЕННАЯ ДЛЯ БОТА =====
+telegram_bot = None
 
 
 def create_app():
@@ -19,6 +25,7 @@ def create_app():
     )
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
+    app.config['TELEGRAM_BOT_TOKEN'] = os.getenv('TELEGRAM_BOT_TOKEN')  # НОВОЕ
     
     # Инициализация расширений
     db.init_app(app)
@@ -29,26 +36,21 @@ def create_app():
     
     # ========== МАРШРУТЫ ==========
     
-    # Главная страница - лендинг
     @app.route('/')
     def landing():
         return render_template('landing.html')
     
-    # Веб-приложение
     @app.route('/app/')
     @app.route('/app/<path:path>')
     def app_main(path=None):
         return render_template('index.html')
     
-    # API health check
     @app.route('/health')
     def health():
         return {'status': 'ok', 'message': 'Рациональный Ассистент работает!'}
     
-    # Скачивание APK файла
     @app.route('/download/android')
     def download_android():
-        # Укажите путь к вашему APK файлу
         apk_path = os.path.join(app.root_path, 'static', 'app.apk')
         if os.path.exists(apk_path):
             return send_file(apk_path, as_attachment=True)
@@ -64,9 +66,52 @@ def init_db(app):
         print("✅ База данных инициализирована!")
 
 
+def start_telegram_bot(app):
+    """Запуск Telegram бота в отдельном потоке"""
+    global telegram_bot
+    
+    with app.app_context():
+        token = app.config.get('TELEGRAM_BOT_TOKEN')
+        
+        if not token:
+            print("⚠️  TELEGRAM_BOT_TOKEN не найден в переменных окружения")
+            print("💡 Создайте файл .env и добавьте: TELEGRAM_BOT_TOKEN=ваш_токен")
+            return
+        
+        telegram_bot = init_telegram_bot(token, db.session)
+        
+        # Создаем новый event loop для этого потока
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        try:
+            loop.run_until_complete(telegram_bot.start_bot())
+            loop.run_forever()
+        except KeyboardInterrupt:
+            telegram_bot.stop()
+            loop.close()
+            print("🛑 Telegram бот остановлен")
+
+
 if __name__ == '__main__':
     app = create_app()
     init_db(app)
+    
+    # ===== ЗАПУСК TELEGRAM БОТА =====
+    bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
+    
+    if bot_token:
+        print("\n🤖 Запуск Telegram бота...")
+        bot_thread = threading.Thread(
+            target=start_telegram_bot,
+            args=(app,),
+            daemon=True
+        )
+        bot_thread.start()
+        print("✅ Telegram бот запущен в фоновом режиме")
+    else:
+        print("\n⚠️  Telegram бот НЕ запущен (отсутствует токен)")
+        print("💡 Добавьте TELEGRAM_BOT_TOKEN в .env для включения уведомлений")
     
     print("\n🎯 Рациональный Ассистент запущен!")
     print("🌐 Лендинг: http://localhost:5000")

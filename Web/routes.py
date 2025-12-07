@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 from models import db, User, Purchase, PriceRange, BlacklistCategory
 from parsers import ProductParser
 from analyzers import PurchaseAnalyzer
+from telegram_bot import get_bot
+import asyncio
 
 api = Blueprint('api', __name__, url_prefix='/api')
 
@@ -120,23 +122,6 @@ def update_user(user_id):
 
 # ===== PURCHASES =====
 
-@api.route('/purchases', methods=['GET'])
-def get_purchases():
-    """Получить список покупок пользователя"""
-    user_id = request.args.get('user_id', type=int)
-    status = request.args.get('status')
-    
-    if not user_id:
-        return jsonify({'error': 'user_id обязателен'}), 400
-    
-    query = Purchase.query.filter_by(user_id=user_id)
-    if status:
-        query = query.filter_by(status=status)
-    
-    purchases = query.order_by(Purchase.created_at.desc()).all()
-    return jsonify([p.to_dict() for p in purchases])
-
-
 @api.route('/purchases', methods=['POST'])
 def create_purchase():
     """Создать новую покупку с анализом"""
@@ -173,11 +158,38 @@ def create_purchase():
     db.session.add(purchase)
     db.session.commit()
     
+    # ===== ОТПРАВКА TELEGRAM УВЕДОМЛЕНИЯ =====
+    bot = get_bot()
+    if bot and analysis['risk_level'] in ['high', 'medium']:
+        try:
+            asyncio.run(bot.notify_high_impulse(purchase, analysis))
+        except Exception as e:
+            print(f"Ошибка отправки уведомления: {e}")
+    # ========================================
+    
     return jsonify({
         'id': purchase.id,
         'purchase': purchase.to_dict(),
         'analysis': analysis
     }), 201
+
+
+@api.route('/purchases', methods=['GET'])
+def get_purchases():
+    """Получить список покупок пользователя"""
+    user_id = request.args.get('user_id')
+    status = request.args.get('status')
+    
+    if not user_id:
+        return jsonify({'error': 'user_id обязателен'}), 400
+    
+    query = Purchase.query.filter_by(user_id=user_id)
+    
+    if status:
+        query = query.filter_by(status=status)
+    
+    purchases = query.order_by(Purchase.created_at.desc()).all()
+    return jsonify([p.to_dict() for p in purchases])
 
 
 @api.route('/purchases/<int:purchase_id>', methods=['PUT'])

@@ -12,6 +12,12 @@ class User(db.Model):
     monthly_savings = db.Column(db.Float, nullable=False)
     current_savings = db.Column(db.Float, default=0.0)
     use_savings_calculation = db.Column(db.Boolean, default=False)
+    
+    # ===== НОВЫЕ ПОЛЯ ДЛЯ TELEGRAM =====
+    telegram_chat_id = db.Column(db.String(100), unique=True, nullable=True)
+    telegram_notifications_enabled = db.Column(db.Boolean, default=True)
+    # ==================================
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -27,6 +33,8 @@ class User(db.Model):
             'monthly_savings': self.monthly_savings,
             'current_savings': self.current_savings,
             'use_savings_calculation': self.use_savings_calculation,
+            'telegram_linked': self.telegram_chat_id is not None,  # НОВОЕ
+            'telegram_notifications': self.telegram_notifications_enabled,  # НОВОЕ
             'last_login': self.last_login.isoformat() if self.last_login else None
         }
 

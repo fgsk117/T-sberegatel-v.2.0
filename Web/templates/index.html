@@ -775,6 +775,30 @@
             
             <!-- Settings Screen -->
             <div id="settings-screen" class="screen">
+                <!-- Добавь ПЕРЕД секцией "Профиль" -->
+                <div class="card">
+                    <h2>📱 Telegram уведомления</h2>
+                    <div id="telegram-status" style="padding: 20px; background: #0A0A0A; border-radius: 12px; margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                            <div id="tg-status-icon" style="font-size: 2em;">❌</div>
+                            <div>
+                                <div id="tg-status-text" style="font-weight: 600; font-size: 1.1em;">Не подключен</div>
+                                <div style="color: #999; font-size: 0.9em;">Получайте уведомления в Telegram</div>
+                            </div>
+                        </div>
+                        <div id="tg-instructions" style="display: none; padding: 16px; background: #1F1F1F; border-radius: 8px; border-left: 3px solid #FFDD2D;">
+                            <p style="margin-bottom: 8px; font-weight: 600;">📝 Как подключить:</p>
+                            <ol style="margin-left: 20px; color: #999; font-size: 0.9em;">
+                                <li>Найдите бота: <code style="background: #2A2A2A; padding: 2px 6px; border-radius: 4px;">@YourBotName</code></li>
+                                <li>Отправьте команду: <code style="background: #2A2A2A; padding: 2px 6px; border-radius: 4px;">/start</code></li>
+                                <li>Привяжите аккаунт: <code style="background: #2A2A2A; padding: 2px 6px; border-radius: 4px;">/link <span id="user-nick">ваш_никнейм</span></code></li>
+                            </ol>
+                        </div>
+                        <button class="btn btn-primary" onclick="toggleTgInstructions()" style="width: 100%; margin-top: 12px;">
+                            📖 Инструкция по подключению
+                        </button>
+                    </div>
+                </div>
                 <div class="card">
                     <h2>💤 Профиль</h2>
                     <form id="profile-form" onsubmit="updateProfile(event)">
@@ -1674,6 +1698,35 @@ async function deletePurchaseFromModal(purchaseId) {
             } catch (error) {
                 console.error('Ошибка загрузки blacklist', error);
             }
+        }
+
+        async function loadTelegramStatus() {
+            const statusIcon = document.getElementById('tg-status-icon');
+            const statusText = document.getElementById('tg-status-text');
+            
+            if (currentUser.telegram_linked) {
+                statusIcon.textContent = '✅';
+                statusText.textContent = 'Подключен';
+                statusText.style.color = '#2DD36F';
+                document.getElementById('tg-instructions').style.display = 'none';
+            } else {
+                statusIcon.textContent = '❌';
+                statusText.textContent = 'Не подключен';
+                statusText.style.color = '#FF3B30';
+                document.getElementById('user-nick').textContent = currentUser.nickname;
+            }
+        }
+
+        function toggleTgInstructions() {
+            const instructions = document.getElementById('tg-instructions');
+            instructions.style.display = instructions.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Вызывай в loadSettings():
+        async function loadSettings() {
+            // ... существующий код ...
+            
+            loadTelegramStatus(); // ДОБАВЬ ЭТУ СТРОКУ
         }
         
         async function updateProfile(e) {
