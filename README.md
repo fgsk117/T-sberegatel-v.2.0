@@ -9,10 +9,64 @@
 *   Уведомления о расходах
 
 ## Технологии
-*   Python + Flask
-*   SQLite + PostgreSQL
-*   JavaScript
-*   TypeScript + React
+
+### Backend (Flask)
+*    Framework: Flask 3.0
+*    База данных: Flask-SQLAlchemy 3.1
+*    Междоменные запросы: Flask-CORS
+*    Работа с конфигурацией: python-dotenv
+*    Внешние запросы и парсинг: requests, lxml
+*    API построено в виде REST-эндпоинтов
+*    Поддержка динамической ORM-моделей и миграций
+
+### Frontend (Vite + React)
+*    сборщик: Vite 7
+*    Библиотека: React 18 + TypeScript
+*    Стилизация: TailwindCSS 3.4
+*    Линтинг: ESLint + TypeScript-ESLint
+*    Fast Refresh + HMR для быстрого развития
+
+## Android-реализация
+
+Использование Vite-приложения как мобильного UI
+
+Упаковка через Capacitor + Android Studio
+
+WebView-контейнер, отправляющий запросы на Flask-API
+
+Генерация APK/AAB для установки на устройство
+
+### Итог
+
+Полноценное клиент-серверное приложение:
+*    Flask обрабатывает данные и запросы,
+*    Vite/React — интерфейс,
+*    Capacitor — упаковка под Android
+
+### Установите Android платформу
+
+npm install @capacitor/android
+
+npx cap add android
+
+### Соберите Vite-проект
+
+npm run build
+
+
+### Скопируйте сборку в Android проект
+
+npx cap copy
+
+npx cap sync
+
+### Откройте проект в Android Studio
+
+npx cap open android
+
+## Web-реализация
+
+
 
 ## Ссылки
 Сайт-визитка: https://т-сберегатель.рф
@@ -21,3 +75,7 @@
 
 ## Лицензия
 Этот проект распространяется под лицензией MIT.
+
+
+
+
